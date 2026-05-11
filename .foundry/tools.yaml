@@ -1,0 +1,65 @@
+# genmail-v2-ao — tools.yaml (Charter v5 schema)
+#
+# Three tiers (P6):
+#   read-only         · no side effects; default available to every kind
+#   internal-write    · writes org's own state (repo / sb-git / worktree)
+#   external-mutation · writes outside world; authorized_kinds MANDATORY
+#
+# An empty `authorized_kinds: []` on external-mutation = explicitly
+# disabled for this org (auditable intent). Listed below for clarity
+# rather than omitted.
+
+tools:
+  # ────────────────────────────────────────────────────────────────────
+  # READ-ONLY — available to every role kind
+  # ────────────────────────────────────────────────────────────────────
+  - { id: gh_issue_read,            tier: read-only }
+  - { id: gh_pr_read,               tier: read-only }
+  - { id: gsk_web_search,           tier: read-only }
+  - { id: gsk_crawler,              tier: read-only }
+  - { id: sb_git_read,              tier: read-only }
+  - { id: llm_call,                 tier: read-only }
+  - { id: agent_browser_read,       tier: read-only }   # screenshot + read, no clicks
+  - { id: worktree_read,            tier: read-only }   # diff inspection only
+
+  # Strategist-only summarizer for context overflow
+  - { id: timeline_summarize,       tier: read-only, authorized_kinds: [strategist] }
+  - { id: cluster_feedback,         tier: read-only, authorized_kinds: [strategist] }
+
+  # ────────────────────────────────────────────────────────────────────
+  # INTERNAL-WRITE — writes org's own state
+  # ────────────────────────────────────────────────────────────────────
+  - { id: sb_git_commit,            tier: internal-write,
+      authorized_kinds: [strategist, builder] }            # P5: strategist /strategy slice; builder /learnings
+  - { id: worktree_write,           tier: internal-write,
+      authorized_kinds: [builder] }                        # only builder edits its own worktree
+  - { id: agent_browser_interact,   tier: internal-write,
+      authorized_kinds: [builder, verifier] }              # builder for own testing, verifier for attacks
+  - { id: gh_issue_open,            tier: internal-write,
+      authorized_kinds: [strategist] }                     # P5: builder uses spawn_child_issue event instead
+  - { id: gh_issue_comment,         tier: internal-write,
+      authorized_kinds: [strategist, builder, verifier] }
+  - { id: gh_pr_open,               tier: internal-write,
+      authorized_kinds: [builder] }
+  - { id: blob_upload,              tier: internal-write,
+      authorized_kinds: [builder, verifier] }              # screenshot uploads
+
+  # ────────────────────────────────────────────────────────────────────
+  # EXTERNAL-MUTATION — writes outside world, gated by authorized_kinds
+  # ────────────────────────────────────────────────────────────────────
+  - { id: gh_pr_merge,              tier: external-mutation,
+      authorized_kinds: [builder] }                        # only after verified state (per-issue allowlist)
+  - { id: gh_release_publish,       tier: external-mutation,
+      authorized_kinds: [builder] }
+  - { id: app_signing,              tier: external-mutation,
+      authorized_kinds: [builder] }                        # macOS notarization, Windows code-signing
+
+  # Explicitly disabled (genmail-v2-ao's scope is product build, not
+  # distribution outreach — disabled tools are listed so the intent is
+  # auditable rather than hidden by omission).
+  - { id: gsk_social_twitter_post,  tier: external-mutation, authorized_kinds: [] }
+  - { id: gsk_social_instagram_post, tier: external-mutation, authorized_kinds: [] }
+  - { id: gsk_gmail_send,           tier: external-mutation, authorized_kinds: [] }
+  - { id: gsk_outlook_email_send,   tier: external-mutation, authorized_kinds: [] }
+  - { id: gsk_phone_call,           tier: external-mutation, authorized_kinds: [] }
+  - { id: stripe_charge,            tier: external-mutation, authorized_kinds: [] }
