@@ -1,33 +1,34 @@
-# genmail-v2-ao — runtime.yaml (Charter v5 schema)
+# genmail-ao-v2 — runtime.yaml (Charter v5 schema)
 #
 # Operator declares provisioning intent. Framework writes back to
 # runtime.allocated.yaml after register_org() completes.
 #
 # Strict 1:1: this org owns one dedicated VM + one dedicated GitHub repo.
 # If the org outgrows `high` tier, the answer is to split into two
-# orgs (e.g., genmail-v2-ao-builder + genmail-v2-ao-distribution),
+# orgs (e.g., genmail-ao-v2-builder + genmail-ao-v2-distribution),
 # NOT to introduce worker VMs.
 
 provisioning:
   vm_tier: standard           # 16 vCPU / 32 GB / 256 GB disk
-                              # Lift to `high` if Flutter web preview +
-                              # multi-platform builds + verifier sessions
-                              # saturate this tier (target 80% headroom).
+                              # Electron + Vite + Chromium screenshot
+                              # verification is CPU-heavy. Lift to `high`
+                              # if multi-platform builds + verifier
+                              # sessions saturate this tier (target 80%
+                              # headroom).
   vm_region: westus2          # Operator latency baseline; alternates at
                               # registration if quota tight.
 
-github_repo: wework5119/genmail-v2-ao
-sb_git_namespace: genmail-v2-ao    # default = repo basename
+github_repo: wework5119/genmail-ao-v2
+sb_git_namespace: genmail-ao-v2    # default = repo basename
 tick_cadence_sec: 60          # orchestrator polls open issues this often
 
 # How many issues active simultaneously. Soft cap for the orchestrator
 # (hard cap is VM tier ceiling — ~30 for standard). Operator estimate at
-# init based on expected workload; framework auto-emits resize-suggestion
-# meta-issue when 7-day average exceeds 80% of this number for sustained
-# period.
-concurrency_target: 18        # Standard tier = ~30 ceiling; 18 leaves
-                              # 40% headroom for verifier surges + Flutter
-                              # build CPU bursts.
+# init; framework auto-emits resize-suggestion meta-issue when 7-day
+# average exceeds 80% of this number for sustained period.
+concurrency_target: 18        # Standard tier ~30 ceiling; 18 leaves
+                              # 40% headroom for verifier surges +
+                              # Electron build CPU bursts.
 
 # Strategist heartbeat cadence (overrides framework default of 21600s).
 # 6h matches genmail-ao's V4 cadence and worked well for mission-level
@@ -39,11 +40,14 @@ secrets:
   - GITHUB_TOKEN
   - FOUNDRY_EVENT_INGEST_SECRET
   - LITELLM_API_KEY
-  # Org-specific:
-  - FLUTTER_FIREBASE_KEY        # Flutter web preview deployment
-  - APPLE_NOTARIZATION_API_KEY  # macOS notarization (release builds)
-  - WINDOWS_CODESIGN_CERT       # Windows code-signing (release builds)
-  - GENSPARK_BLOB_WRITE_KEY     # Screenshot uploads for issue evidence
+  # Org-specific (Electron desktop pipeline):
+  - APPLE_DEVELOPER_ID_CERT       # macOS code-signing identity
+  - APPLE_NOTARIZATION_API_KEY    # macOS notarization (release builds)
+  - APPLE_NOTARIZATION_APPLE_ID
+  - WINDOWS_CODESIGN_CERT_BASE64  # Windows code-signing PFX (base64)
+  - WINDOWS_CODESIGN_PASSWORD
+  - GENSPARK_BLOB_WRITE_KEY       # Screenshot uploads for issue evidence
+  - AUTOUPDATE_RELEASE_TOKEN      # electron-updater release-feed token
 
 # Framework will write runtime.allocated.yaml here after register_org()
 # completes. Operator does not author that file.

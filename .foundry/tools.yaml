@@ -1,4 +1,8 @@
-# genmail-v2-ao — tools.yaml (Charter v5 schema)
+# genmail-ao-v2 — tools.yaml (Charter v5 schema)
+#
+# Stack: Electron + React + TypeScript + Vite + Tailwind. Verifier
+# drives the dev Electron app via Chromium DevTools Protocol on the
+# substrate Chrome (port 9222) — no extra harness needed.
 #
 # Three tiers (P6):
 #   read-only         · no side effects; default available to every kind
@@ -51,10 +55,14 @@ tools:
       authorized_kinds: [builder] }                        # only after verified state (per-issue allowlist)
   - { id: gh_release_publish,       tier: external-mutation,
       authorized_kinds: [builder] }
-  - { id: app_signing,              tier: external-mutation,
-      authorized_kinds: [builder] }                        # macOS notarization, Windows code-signing
+  - { id: macos_notarize,           tier: external-mutation,
+      authorized_kinds: [builder] }                        # Apple notarytool
+  - { id: windows_codesign,         tier: external-mutation,
+      authorized_kinds: [builder] }                        # signtool / osslsigncode
+  - { id: autoupdate_publish,       tier: external-mutation,
+      authorized_kinds: [builder] }                        # electron-updater release feed
 
-  # Explicitly disabled (genmail-v2-ao's scope is product build, not
+  # Explicitly disabled (genmail-ao-v2's scope is product build, not
   # distribution outreach — disabled tools are listed so the intent is
   # auditable rather than hidden by omission).
   - { id: gsk_social_twitter_post,  tier: external-mutation, authorized_kinds: [] }
