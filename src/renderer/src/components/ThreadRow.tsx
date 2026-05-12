@@ -73,7 +73,7 @@ export default function ThreadRow({
             </span>
             <span
               className={`text-2xs whitespace-nowrap flex-shrink-0 leading-5 tabular-nums ${
-                thread.unread ? 'text-accent-600 font-medium' : 'text-text-tertiary'
+                thread.unread ? 'text-accent-600 font-medium' : selected ? 'text-text-secondary' : 'text-text-tertiary'
               }`}
             >
               {formatRelativeTime(thread.lastMessageAt)}
@@ -93,12 +93,12 @@ export default function ThreadRow({
 
           {/* Row 3: Snippet + optional attachment icon */}
           <div className="flex items-center gap-1.5">
-            <div className="flex-1 min-w-0 text-xs text-text-tertiary truncate leading-[17px]">
+            <div className={`flex-1 min-w-0 text-xs truncate leading-[17px] ${selected ? 'text-text-secondary' : 'text-text-tertiary'}`}>
               {thread.snippet}
             </div>
             {thread.hasAttachments && (
               <svg
-                className="w-3 h-3 text-text-tertiary flex-shrink-0 opacity-60"
+                className={`w-3 h-3 flex-shrink-0 opacity-60 ${selected ? 'text-text-secondary' : 'text-text-tertiary'}`}
                 viewBox="0 0 16 16"
                 fill="currentColor"
                 aria-label="Has attachments"

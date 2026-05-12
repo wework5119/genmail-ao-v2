@@ -103,7 +103,7 @@ export default function ThreadList() {
         <div className="flex flex-col items-center gap-3 max-w-[220px] text-center">
           <div className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center">
             <svg
-              className="w-4 h-4 text-neutral-400"
+              className="w-4 h-4 text-neutral-500"
               viewBox="0 0 16 16"
               fill="currentColor"
             >
@@ -137,7 +137,7 @@ export default function ThreadList() {
         <div className="flex flex-col items-center gap-3 max-w-[220px] text-center">
           <div className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center">
             <svg
-              className="w-4 h-4 text-neutral-400"
+              className="w-4 h-4 text-neutral-500"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
