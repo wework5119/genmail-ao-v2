@@ -136,32 +136,52 @@ export default function ThreadList() {
   }
 
   return (
-    <div
-      ref={listRef}
-      className="flex-1 scrollable"
-      tabIndex={0}
-      role="listbox"
-      aria-label="Thread list"
-    >
-      {state.threads.map((thread) => (
-        <div key={thread.id} data-thread-id={thread.id}>
-          <ThreadRow
-            thread={thread}
-            selected={thread.id === state.selectedThreadId}
-            onSelect={() => selectThread(thread.id)}
-            onDoubleClick={() => {}}
-          />
-          <div className="mx-4 border-b border-border last:border-b-0" />
-        </div>
-      ))}
+    <div className="flex-1 flex flex-col min-h-0">
+      {/* Section header */}
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-border">
+        <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
+          Inbox
+        </span>
+        {state.threads.length > 0 && (
+          <span className="text-2xs text-text-tertiary">
+            {state.threads.filter((t) => t.unread).length > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent-600 text-white font-medium text-[10px] leading-none">
+                {state.threads.filter((t) => t.unread).length}
+              </span>
+            )}
+          </span>
+        )}
+      </div>
 
-      {state.loadingMore && (
-        <div className="flex items-center justify-center py-4">
-          <div className="w-4 h-4 border-2 border-neutral-400 border-t-accent-600 rounded-full animate-spin" />
-        </div>
-      )}
+      <div
+        ref={listRef}
+        className="flex-1 scrollable"
+        tabIndex={0}
+        role="listbox"
+        aria-label="Thread list"
+      >
+        {state.threads.map((thread, index) => (
+          <div key={thread.id} data-thread-id={thread.id}>
+            <ThreadRow
+              thread={thread}
+              selected={thread.id === state.selectedThreadId}
+              onSelect={() => selectThread(thread.id)}
+              onDoubleClick={() => {}}
+            />
+            {index < state.threads.length - 1 && (
+              <div className="ml-[44px] mr-0 border-b border-border opacity-60" />
+            )}
+          </div>
+        ))}
 
-      <div ref={observerRef} className="h-px" />
+        {state.loadingMore && (
+          <div className="flex items-center justify-center py-4">
+            <div className="w-4 h-4 border-2 border-neutral-200 border-t-accent-500 rounded-full animate-spin" />
+          </div>
+        )}
+
+        <div ref={observerRef} className="h-px" />
+      </div>
     </div>
   )
 }

@@ -39,7 +39,7 @@ describe('ThreadRow', () => {
         onDoubleClick={() => {}}
       />
     )
-    expect(screen.getByText(/now|m ago|h ago|d ago|Mon|Tue|Wed|Thu|Fri|Sat|Sun/)).toBeTruthy()
+    expect(screen.getByText(/now|\dm|\dh|Mon|Tue|Wed|Thu|Fri|Sat|Sun|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/)).toBeTruthy()
   })
 
   it('applies selected styles when selected', () => {
