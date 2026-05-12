@@ -138,10 +138,12 @@ export default function MessageBody({ message }: MessageBodyProps) {
     return sanitizeHtml(message.body)
   }, [message.body, message.bodyType])
 
+  // Check sanitizedHtml (not raw body) so that data: URI images already stripped
+  // by the sanitizer don't produce a spurious "Show images" banner.
   const hasImages = useMemo(() => {
     if (message.bodyType !== 'html') return false
-    return /<img[^>]+src=["']/i.test(message.body)
-  }, [message.body, message.bodyType])
+    return /<img[^>]+src=["']/i.test(sanitizedHtml)
+  }, [sanitizedHtml, message.bodyType])
 
   const { mainHtml, quotedHtml } = useMemo(() => {
     if (message.bodyType !== 'html') return { mainHtml: '', quotedHtml: undefined }
