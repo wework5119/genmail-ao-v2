@@ -27,9 +27,15 @@ function sanitizeHtml(html: string): string {
         el.removeAttribute(attrs[i].name)
         continue
       }
-      // Remove attributes whose value contains a javascript:/vbscript: URI
-      // (covers href="javascript:alert(1)", src="javascript:...", etc.)
-      if (value.startsWith('javascript:') || value.startsWith('vbscript:')) {
+      // Remove attributes whose value starts with a dangerous URI scheme.
+      // - javascript:/vbscript: execute code in the renderer
+      // - data: can encode HTML/JS payloads (e.g. data:text/html,<script>...)
+      //   that execute when clicked or loaded as a resource
+      if (
+        value.startsWith('javascript:') ||
+        value.startsWith('vbscript:') ||
+        value.startsWith('data:')
+      ) {
         el.removeAttribute(attrs[i].name)
       }
     }

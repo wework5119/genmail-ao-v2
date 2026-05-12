@@ -78,6 +78,9 @@ export default function ThreadDetailView() {
   // Observe the top sentinel using the scroll container as the root so the observer
   // only fires when the user actually scrolls up to the top of the messages list,
   // not immediately on mount when the sentinel is incidentally in the viewport.
+  // NOTE: state.messages.length is included as a dep so the effect re-runs when
+  // messages first load — the scrollContainerRef and topSentinelRef only become
+  // available after the success render branch mounts, not during loading/error/empty.
   useEffect(() => {
     const sentinel = topSentinelRef.current
     const scrollContainer = scrollContainerRef.current
@@ -98,7 +101,7 @@ export default function ThreadDetailView() {
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [state.messagesHasMore, state.messagesLoadingMore, loadMoreMessages])
+  }, [state.messagesHasMore, state.messagesLoadingMore, loadMoreMessages, state.messages.length])
 
   const selectedThread = state.threads.find(
     (t) => t.id === state.selectedThreadId
