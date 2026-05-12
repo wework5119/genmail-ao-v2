@@ -42,21 +42,106 @@ what they did.
    reasoning "CRITERIA/DESIGN_AXES underspecified" and stop.
 2. **Read the artifact** — open the PR, every screenshot in the multi-
    state grid, the test transcript. Note what was actually delivered.
-3. **Run the functional attacks** (see `## ATTACKS`).
-4. **Run the design attacks** (see `## DESIGN_AXES` below). Score each
-   axis 0–10 with concrete evidence.
-5. **Judge**:
+3. **Stand the app up for real** (no static-only verdicts allowed —
+   see "## E2E PROOF" below for the exact bar). Pull the PR branch
+   into your own worktree, install + build, launch the Electron app
+   via ``xvfb-run`` + a real display, drive the flow described in
+   CRITERIA by attaching to the substrate Chrome (CDP port 9222) /
+   Playwright-Electron, and **capture screenshots of every state
+   listed in DESIGN_AXES** (default / hover / focus / loading /
+   empty / error / dark mode for visible-UI issues; CLI / log output
+   for backend-only issues). Upload the screenshots to public blob
+   (``blob_upload``) and reference the URLs in your verdict comment.
+4. **Run the functional attacks** (see `## ATTACKS`) — drive each
+   attack class against the LIVE app, NOT against the diff. A test
+   transcript from the builder's `pnpm test` does NOT count; you
+   must reproduce the attack interactively and screenshot the
+   resulting state.
+5. **Run the design attacks** (see `## DESIGN_AXES` below). Score each
+   axis 0–10 against the actual screenshots YOU just captured, NOT
+   the builder's self-assessment.
+6. **Judge**:
    - Functional attacks all defended AND CRITERIA met AND every design
      axis ≥ 8 → emit `built → verified` with reasoning
-     "K/K attacks defended; design VH/R/P = X/Y/Z".
+     "K/K attacks defended; design VH/R/P = X/Y/Z", THEN immediately
+     execute step 7 below (auto-merge — no operator approval needed,
+     G2 retired 2026-05-12).
    - Any functional attack fails OR CRITERIA unmet OR any design axis
      < 8 → emit `built → built` with reasoning naming the SPECIFIC
      failure (which attack OR which axis dropped, with concrete
      evidence pointing to a specific screenshot region or interaction).
-6. **Be specific**. A FAIL reasoning that says "looks bad" is useless.
+     STOP — builder picks up next tick.
+7. **PASS post-step — merge + close** (autonomous; no operator +1
+   needed):
+   - ``gh pr merge --squash --delete-branch <pr-url>`` to merge the
+     PR. Squash so the issue's commit history collapses into one
+     merge commit on main.
+   - ``gh issue close <issue-number> --reason completed`` to close
+     the issue.
+   - Emit a final ``state_transition`` event ``verified → done``
+     with reasoning citing the merge SHA + the verdict comment URL.
+   - DO NOT wait for any external signal; PASS = ship. If the merge
+     fails (CI red on main, conflict, branch protection), emit
+     ``verified → blocked`` with the ``gh`` stderr verbatim.
+8. **Be specific**. A FAIL reasoning that says "looks bad" is useless.
    A FAIL that says "polish=6: hover state on Send button uses default
    browser `cursor: pointer` ring (rgb(0,0,255) 2px) instead of the
    token `--ring-focus` — see screenshot abc123 top-right" is actionable.
+
+## E2E PROOF (mandatory — every issue, no exceptions)
+
+**Static analysis is NOT verification.** A diff that compiles and
+passes the builder's own unit tests can still ship a UI nobody can
+use, a crash on second launch, a credential leak in a window title,
+or an inaccessible color. Static analysis catches a fraction of the
+failure modes the operator will hit on day-one of dogfooding.
+
+For **visible-UI issues**, your verdict comment MUST embed:
+
+1. **Launch evidence** — terminal output of ``pnpm exec electron-vite
+   build && xvfb-run -a pnpm exec electron --no-sandbox ./out/main/
+   index.js`` (or the project's equivalent ``pnpm dev`` /
+   ``pnpm start``) showing the app started without crashing.
+2. **Multi-state screenshots** — one PNG per state the issue's
+   CRITERIA / DESIGN_AXES rubric calls out. Minimum set for any UI
+   issue: ``default``, ``hover`` (where applicable), ``focus``,
+   ``loading``, ``empty``, ``error``, ``dark mode`` (if dark mode is
+   in scope). Use ``agent-browser snapshot --url <electron-window-
+   url>`` (substrate Chrome CDP attaches to the Electron renderer
+   window) or Playwright-Electron's ``page.screenshot()``. Each
+   screenshot at design-system viewport (1440×900 light / 1440×900
+   dark).
+3. **Interaction trace** — for each functional attack class, a 2-line
+   transcript: "I did X. Result: Y." referencing the screenshot URL
+   that captured the result.
+4. **Contrast check** — for each foreground/background pair used in
+   the surface, compute WCAG AA ratio. Any sub-AA pair caps
+   ``visual_hierarchy`` at 6 → instant FAIL.
+
+For **backend-only issues** (no visible UI surface, e.g. an IPC
+bridge), substitute screenshots with:
+
+1. **Launch evidence** — same as above.
+2. **Test transcript** — run the unit suite YOURSELF (``pnpm test``),
+   do not trust the builder's claim. Paste the actual stdout in the
+   verdict.
+3. **One real call against the live process** — start the dev
+   process, send a real request through the new bridge / channel,
+   paste request + response.
+4. **Error-path coverage** — drive at least one failure injection
+   (kill the backend mid-request, malformed payload, port collision,
+   etc.) and show the user-facing error didn't crash the app.
+
+**Builder self-screenshots are inadmissible.** If the builder
+included screenshots in their PR body, take fresh ones in your own
+worktree — builder screenshots can be cherry-picked, your job is to
+catch what they chose not to show.
+
+**You are running on a supervm with Xvfb available** (``xvfb-run``),
+substrate Chrome with CDP on port 9222, agent-browser CLI, and
+Playwright preinstalled. If anything is missing, install it on the
+spot and note the install in your verdict so the next verifier
+doesn't re-discover the toolchain.
 
 ## FUNCTIONAL ATTACKS (template — orchestrator extends per surface)
 

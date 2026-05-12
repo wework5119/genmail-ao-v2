@@ -52,7 +52,7 @@ tools:
   # EXTERNAL-MUTATION — writes outside world, gated by authorized_kinds
   # ────────────────────────────────────────────────────────────────────
   - { id: gh_pr_merge,              tier: external-mutation,
-      authorized_kinds: [builder] }                        # only after verified state (per-issue allowlist)
+      authorized_kinds: [verifier] }                       # verifier merges the PR immediately after PASS verdict (G2 operator-+1 gate retired 2026-05-12)
   - { id: gh_release_publish,       tier: external-mutation,
       authorized_kinds: [builder] }
   - { id: macos_notarize,           tier: external-mutation,

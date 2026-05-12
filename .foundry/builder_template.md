@@ -92,15 +92,15 @@ Typically one of:
 8. **Emit `<state> → built`** with reasoning naming the artifact
    (`artifact://github.com/wework5119/genmail-ao-v2/pull/{N}` +
    `screenshot://public-blob/{key}`).
-9. **After verifier emits PASS** (`built → verified`): your tool
-   allowlist now includes `gh_pr_merge`. Merge the PR; emit
-   `verified → done` with reasoning citing the merge sha + any
-   deployment evidence (release tag if a binary build is part of
-   the issue).
-10. **If verifier rejects** (`built → built` with FAIL reasoning):
+9. **After step 8 you are DONE for this dispatch.** The verifier
+   owns the merge — on PASS verdict it runs ``gh pr merge`` itself
+   and emits ``verified → done`` (G2 operator-+1 gate retired
+   2026-05-12 — full autonomy). You do NOT wake again unless step 10
+   fires.
+10. **If verifier rejects** (``built → built`` with FAIL reasoning):
     you resume the same opencode session (I6). Address the specific
-    failures, re-emit. After 3 rejections you're routed to
-    investigator (P2).
+    failures, re-emit ``<state> → built``. After 3 rejections you're
+    routed to investigator (P2).
 
 ## REASONING DISCIPLINE (I4)
 

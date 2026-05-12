@@ -2,9 +2,12 @@ inherit: framework/v5
 
 # Org-specific additions for genmail-v2-ao.
 #
-# Most orgs inherit framework only; this one adds two principles
-# because the product is operator-personal email (high stakes for
-# accidental exposure) and ships as signed binaries (irreversible).
+# Most orgs inherit framework only; this one adds a single privacy
+# invariant because the product is operator-personal email (high stakes
+# for accidental exposure). The earlier G2 operator-+1 gate on `done`
+# transitions has been removed (2026-05-12) — verifier PASS now
+# authorizes immediate merge with no human in the loop. Full autonomy
+# is the bet; revisit if the verifier rubric proves too permissive.
 
 org_specific:
   - id: G1
@@ -22,19 +25,3 @@ org_specific:
       leak of body content to a logs system would be a trust-ending
       event. Framework I2 protects against cross-issue leakage but does
       not specifically forbid email-content logging within an issue.
-
-  - id: G2
-    text: |
-      All `external-mutation` calls in the `done` transition (PR merge,
-      release publish, app signing) require an explicit operator
-      `+1` reaction on the issue before builder executes them. The
-      verifier PASS verdict authorizes the *intent* to ship; the
-      operator `+1` authorizes the *execution*. This is an additional
-      human-gate beyond framework's automatic `verified → done` flow.
-    applies_to: builder
-    rationale: |
-      Released binaries are extremely hard to recall (signed updates
-      propagate to users' machines). Wrong release = trust event +
-      support burden. Operator stays in the loop until automation
-      track record justifies removing this gate (planned: revisit
-      after 50 issues shipped without operator-blocked execution).
