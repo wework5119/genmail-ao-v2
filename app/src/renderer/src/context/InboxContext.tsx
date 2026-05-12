@@ -17,6 +17,7 @@ import { getAccounts, listThreads, getMessages } from '../lib/ipc'
 
 interface InboxState {
   accounts: Account[]
+  accountsError: string | null
   selectedAccountId: string | null
   threads: Thread[]
   selectedThreadId: string | null
@@ -38,6 +39,7 @@ interface InboxState {
 
 type InboxAction =
   | { type: 'SET_ACCOUNTS'; payload: Account[] }
+  | { type: 'SET_ACCOUNTS_ERROR'; payload: string }
   | { type: 'SELECT_ACCOUNT'; payload: string }
   | { type: 'LOAD_THREADS_START' }
   | { type: 'LOAD_THREADS_SUCCESS'; payload: { threads: Thread[]; nextCursor?: string; hasMore: boolean } }
@@ -59,7 +61,9 @@ type InboxAction =
 function inboxReducer(state: InboxState, action: InboxAction): InboxState {
   switch (action.type) {
     case 'SET_ACCOUNTS':
-      return { ...state, accounts: action.payload }
+      return { ...state, accounts: action.payload, accountsError: null }
+    case 'SET_ACCOUNTS_ERROR':
+      return { ...state, accountsError: action.payload }
     case 'SELECT_ACCOUNT':
       return {
         ...state,
@@ -181,6 +185,7 @@ function inboxReducer(state: InboxState, action: InboxAction): InboxState {
 
 const initialState: InboxState = {
   accounts: [],
+  accountsError: null,
   selectedAccountId: null,
   threads: [],
   selectedThreadId: null,
@@ -258,22 +263,10 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
           loadAfterInit.current = true
         }
       })
-      .catch(() => {
-        dispatch({
-          type: 'SET_ACCOUNTS',
-          payload: [
-            {
-              id: '1',
-              email: 'alice@example.com',
-              displayName: 'Alice Johnson',
-              name: 'Alice Johnson',
-              provider: 'gmail',
-              isAuthenticated: true
-            }
-          ]
-        })
-        dispatch({ type: 'SELECT_ACCOUNT', payload: '1' })
-        loadAfterInit.current = true
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : 'Failed to load accounts'
+        dispatch({ type: 'SET_ACCOUNTS_ERROR', payload: message })
       })
   }, [])
 

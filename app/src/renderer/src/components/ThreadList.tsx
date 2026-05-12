@@ -7,16 +7,25 @@ export default function ThreadList() {
     useInbox()
   const listRef = useRef<HTMLDivElement>(null)
   const observerRef = useRef<HTMLDivElement>(null)
+  // Track scroll position in a ref to avoid re-render on every scroll event.
+  // Only push to context state on navigation so InboxProvider consumers
+  // (AccountPicker, ThreadDetailView, etc.) don't re-render mid-scroll.
+  const scrollPositionRef = useRef(0)
 
   const saveScrollPosition = useCallback(() => {
     if (listRef.current) {
-      setScrollPosition(listRef.current.scrollTop)
+      const pos = listRef.current.scrollTop
+      scrollPositionRef.current = pos
+      setScrollPosition(pos)
     }
   }, [setScrollPosition])
 
   const handleScroll = useCallback(() => {
-    saveScrollPosition()
-  }, [saveScrollPosition])
+    // Only update the ref, not the context state, during live scrolling.
+    if (listRef.current) {
+      scrollPositionRef.current = listRef.current.scrollTop
+    }
+  }, [])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

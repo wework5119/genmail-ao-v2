@@ -5,7 +5,15 @@ function sanitizeHtml(html: string): string {
   const parser = new DOMParser()
   const doc = parser.parseFromString(html, 'text/html')
 
-  const scripts = doc.querySelectorAll('script, iframe, object, embed, form')
+  // Remove dangerous tags that can exfiltrate data, redirect, or execute code:
+  // - script/iframe/object/embed/form: execution vectors
+  // - style: CSS url() can beacon external trackers bypassing image blocking
+  // - meta: http-equiv="refresh" can redirect the frame
+  // - base: alters all relative link destinations
+  // - link: can load external stylesheets or trigger requests
+  const scripts = doc.querySelectorAll(
+    'script, iframe, object, embed, form, style, meta, base, link'
+  )
   scripts.forEach((el) => el.remove())
 
   const allElements = doc.querySelectorAll('*')

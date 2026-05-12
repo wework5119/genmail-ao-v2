@@ -20,6 +20,27 @@ export default function AccountPicker() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Show a non-interactive error badge if accounts failed to load
+  if (state.accountsError) {
+    return (
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+          <svg className="w-3 h-3 text-red-500" viewBox="0 0 16 16" fill="currentColor">
+            <path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 5a.75.75 0 011.5 0v3a.75.75 0 01-1.5 0V5zm.75 6.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-red-600 truncate leading-normal">
+            Account error
+          </div>
+          <div className="text-2xs text-text-tertiary leading-tight truncate">
+            {state.accountsError}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div ref={ref} className="relative">
       <button
