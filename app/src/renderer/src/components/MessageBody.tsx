@@ -27,6 +27,13 @@ function sanitizeHtml(html: string): string {
         el.removeAttribute(attrs[i].name)
         continue
       }
+      // Remove inline style attributes — CSS url() calls in style attributes
+      // (e.g. background-image: url(...)) can beacon external trackers and
+      // bypass the "Show images" blocking mechanism, same as <style> tags.
+      if (name === 'style') {
+        el.removeAttribute(attrs[i].name)
+        continue
+      }
       // Remove attributes whose value starts with a dangerous URI scheme.
       // - javascript:/vbscript: execute code in the renderer
       // - data: can encode HTML/JS payloads (e.g. data:text/html,<script>...)
@@ -69,7 +76,9 @@ function splitQuotedContent(html: string): { main: string; quoted: string | unde
   const doc = parser.parseFromString(html, 'text/html')
   const body = doc.body
 
-  // Gmail / Outlook quoted markers
+  // Gmail / Outlook quoted markers — handled first, but fall through only if
+  // the element was NOT found (not if it was found but left main content empty,
+  // since the DOM has already been mutated at that point).
   const gmailQuote = body.querySelector('.gmail_quote, .yahoo_quoted, blockquote[type="cite"]')
   if (gmailQuote && gmailQuote.parentElement === body) {
     const quotedHtml = gmailQuote.outerHTML
@@ -78,9 +87,12 @@ function splitQuotedContent(html: string): { main: string; quoted: string | unde
     if (mainHtml.length > 0 && quotedHtml.length > 0) {
       return { main: mainHtml, quoted: quotedHtml }
     }
+    // The Gmail-quote matched but there was no non-quoted content — return
+    // the full original html so the user can at least read the message.
+    return { main: html, quoted: undefined }
   }
 
-  // Last top-level blockquote heuristic
+  // Last top-level blockquote heuristic (only runs when no gmail_quote found)
   const topBlockquotes = Array.from(body.children).filter(
     (el) => el.tagName === 'BLOCKQUOTE'
   )

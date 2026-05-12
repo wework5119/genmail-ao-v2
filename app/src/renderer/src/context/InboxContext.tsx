@@ -51,8 +51,8 @@ type InboxAction =
   | { type: 'REFRESH' }
   | { type: 'SET_SCROLL_POSITION'; payload: number }
   | { type: 'NAVIGATE'; payload: View }
-  | { type: 'LOAD_MESSAGES_START' }
-  | { type: 'LOAD_MESSAGES_SUCCESS'; payload: GetMessagesResult }
+  | { type: 'LOAD_MESSAGES_START'; payload: { threadId: string } }
+  | { type: 'LOAD_MESSAGES_SUCCESS'; payload: GetMessagesResult & { threadId: string } }
   | { type: 'LOAD_MORE_MESSAGES_START' }
   | { type: 'LOAD_MORE_MESSAGES_SUCCESS'; payload: GetMessagesResult }
   | { type: 'LOAD_MESSAGES_FAILURE'; payload: string }
@@ -137,6 +137,11 @@ function inboxReducer(state: InboxState, action: InboxAction): InboxState {
     case 'LOAD_MESSAGES_START':
       return { ...state, messagesLoading: true, messagesError: null }
     case 'LOAD_MESSAGES_SUCCESS': {
+      // Guard against stale responses: if the user navigated to a different
+      // thread while this fetch was in flight, discard the response.
+      if (action.payload.threadId !== state.selectedThreadId) {
+        return { ...state, messagesLoading: false }
+      }
       const sorted = [...action.payload.messages].sort(
         (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
       )
@@ -337,14 +342,15 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
 
   const loadMessages = useCallback(async () => {
     if (!state.selectedAccountId || !state.selectedThreadId) return
-    dispatch({ type: 'LOAD_MESSAGES_START' })
+    const threadId = state.selectedThreadId
+    dispatch({ type: 'LOAD_MESSAGES_START', payload: { threadId } })
     try {
       const result = await getMessages({
         accountId: state.selectedAccountId,
-        threadId: state.selectedThreadId,
+        threadId,
         pageParams: { pageSize: 20 }
       })
-      dispatch({ type: 'LOAD_MESSAGES_SUCCESS', payload: result })
+      dispatch({ type: 'LOAD_MESSAGES_SUCCESS', payload: { ...result, threadId } })
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to load messages'

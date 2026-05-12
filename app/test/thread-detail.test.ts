@@ -374,3 +374,100 @@ describe('Pagination state', () => {
     expect(combined[1].id).toBe('msg-3')
   })
 })
+
+// ─── Stale-response guard logic ───────────────────────────────────────────────
+
+describe('Stale async response guard', () => {
+  /**
+   * Mirrors the LOAD_MESSAGES_SUCCESS reducer logic that guards against
+   * stale in-flight responses when the user navigates to a different thread.
+   */
+  function applyLoadMessagesSuccess(
+    selectedThreadId: string | null,
+    payloadThreadId: string,
+    payloadMessages: Message[]
+  ): { applied: boolean; messages: Message[] } {
+    // Simulate the reducer staleness check
+    if (payloadThreadId !== selectedThreadId) {
+      return { applied: false, messages: [] }
+    }
+    const sorted = [...payloadMessages].sort(
+      (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+    )
+    return { applied: true, messages: sorted }
+  }
+
+  it('applies result when threadId matches selected thread', () => {
+    const msgs = [makeMessage({ id: 'msg-1' })]
+    const { applied, messages } = applyLoadMessagesSuccess('thread-1', 'thread-1', msgs)
+    expect(applied).toBe(true)
+    expect(messages).toHaveLength(1)
+  })
+
+  it('discards result when threadId does not match selected thread (stale)', () => {
+    const msgs = [makeMessage({ id: 'msg-1' })]
+    const { applied } = applyLoadMessagesSuccess('thread-2', 'thread-1', msgs)
+    expect(applied).toBe(false)
+  })
+
+  it('discards result when selected thread is null (navigated away)', () => {
+    const msgs = [makeMessage({ id: 'msg-1' })]
+    const { applied } = applyLoadMessagesSuccess(null, 'thread-1', msgs)
+    expect(applied).toBe(false)
+  })
+})
+
+// ─── Sanitizer attribute stripping logic ─────────────────────────────────────
+
+describe('HTML sanitization — attribute policy', () => {
+  /**
+   * Mirrors the attribute-stripping logic from sanitizeHtml without DOMParser
+   * (not available in Node test environment). Tests the decision logic.
+   */
+  function shouldStripAttr(attrName: string, attrValue: string): boolean {
+    const name = attrName.toLowerCase()
+    const value = attrValue.toLowerCase().trimStart()
+    if (name.startsWith('on')) return true
+    if (name === 'style') return true
+    if (value.startsWith('javascript:')) return true
+    if (value.startsWith('vbscript:')) return true
+    if (value.startsWith('data:')) return true
+    return false
+  }
+
+  it('strips event handler attributes (onclick)', () => {
+    expect(shouldStripAttr('onclick', 'alert(1)')).toBe(true)
+  })
+
+  it('strips event handler attributes (onload)', () => {
+    expect(shouldStripAttr('onload', 'malicious()')).toBe(true)
+  })
+
+  it('strips inline style attributes to prevent CSS url() tracking', () => {
+    expect(shouldStripAttr('style', 'background-image: url(https://tracker.com)')).toBe(true)
+  })
+
+  it('strips href with javascript: URI', () => {
+    expect(shouldStripAttr('href', 'javascript:alert(1)')).toBe(true)
+  })
+
+  it('strips src with data: URI', () => {
+    expect(shouldStripAttr('src', 'data:text/html,<script>bad()</script>')).toBe(true)
+  })
+
+  it('strips href with vbscript: URI', () => {
+    expect(shouldStripAttr('href', 'vbscript:msgbox(1)')).toBe(true)
+  })
+
+  it('allows safe href attributes', () => {
+    expect(shouldStripAttr('href', 'https://example.com')).toBe(false)
+  })
+
+  it('allows safe class attributes', () => {
+    expect(shouldStripAttr('class', 'gmail_quote')).toBe(false)
+  })
+
+  it('allows safe src attributes', () => {
+    expect(shouldStripAttr('src', 'https://example.com/image.png')).toBe(false)
+  })
+})
