@@ -60,29 +60,108 @@ what they did.
 5. **Run the design attacks** (see `## DESIGN_AXES` below). Score each
    axis 0–10 against the actual screenshots YOU just captured, NOT
    the builder's self-assessment.
-6. **Judge**:
-   - Functional attacks all defended AND CRITERIA met AND every design
-     axis ≥ 8 → emit `built → verified` with reasoning
-     "K/K attacks defended; design VH/R/P = X/Y/Z", THEN immediately
-     execute step 7 below (auto-merge — no operator approval needed,
-     G2 retired 2026-05-12).
-   - Any functional attack fails OR CRITERIA unmet OR any design axis
-     < 8 → emit `built → built` with reasoning naming the SPECIFIC
-     failure (which attack OR which axis dropped, with concrete
-     evidence pointing to a specific screenshot region or interaction).
-     STOP — builder picks up next tick.
+6. **Judge** — decide PASS or FAIL. THIS IS WHERE YOU EMIT THE EVENT.
+   The "emit" verb below means **run this exact curl command** — not
+   "make a decision in your head". The event MUST be POSTed to the
+   backend BEFORE you attempt any merge, because the merge can fail
+   for reasons outside your control (CI, branch protection, rate
+   limit) but the verdict is still your finished work and must be
+   recorded.
+
+   - **PASS** (functional attacks all defended AND CRITERIA met AND
+     every design axis ≥ 8):
+
+     ```bash
+     # Step 6.PASS.a — POST the verdict event FIRST. This is the
+     # commitment. If anything below fails, this record stays.
+     curl -fsS -X POST \
+       -H "Authorization: Bearer $FOUNDRY_EVENT_INGEST_SECRET" \
+       -H "Content-Type: application/json" \
+       "$FOUNDRY_BACKEND_URL/api/autonomous-org/foundry/projects/$FOUNDRY_PROJECT_ID/event" \
+       -d "$(jq -n --arg n "$ISSUE_N" --arg reason "$REASONING" --arg verdict "$VERDICT_URL" '{
+         kind: "transition_started",
+         issue_number: ($n | tonumber),
+         from_state: "built",
+         to_state: "verified",
+         role_id: "verifier",
+         reasoning_text: $reason,
+         payload: {verdict_url: $verdict, verdict: "PASS"}
+       }')"
+     ```
+
+     `$REASONING` example: ``"K/K attacks defended; design VH/R/P =
+     9/8/9; verdict at <comment-url>"``. `$VERDICT_URL` is the
+     ``gh pr comment ...`` URL from step 3 (where you posted the
+     multi-state screenshot grid + interaction trace).
+
+     **Then proceed to step 7 (merge).**
+
+   - **FAIL** (any functional attack fails OR CRITERIA unmet OR any
+     design axis < 8):
+
+     ```bash
+     curl -fsS -X POST \
+       -H "Authorization: Bearer $FOUNDRY_EVENT_INGEST_SECRET" \
+       -H "Content-Type: application/json" \
+       "$FOUNDRY_BACKEND_URL/api/autonomous-org/foundry/projects/$FOUNDRY_PROJECT_ID/event" \
+       -d "$(jq -n --arg n "$ISSUE_N" --arg reason "$REASONING" --arg verdict "$VERDICT_URL" '{
+         kind: "transition_started",
+         issue_number: ($n | tonumber),
+         from_state: "built",
+         to_state: "built",
+         role_id: "verifier",
+         reasoning_text: $reason,
+         payload: {verdict_url: $verdict, verdict: "FAIL"}
+       }')"
+     ```
+
+     `$REASONING` must name the SPECIFIC failure (which attack OR
+     which axis dropped, with concrete evidence pointing to a
+     specific screenshot region or interaction). STOP — builder
+     picks up next tick.
+
 7. **PASS post-step — merge + close** (autonomous; no operator +1
    needed):
-   - ``gh pr merge --squash --delete-branch <pr-url>`` to merge the
-     PR. Squash so the issue's commit history collapses into one
-     merge commit on main.
-   - ``gh issue close <issue-number> --reason completed`` to close
-     the issue.
-   - Emit a final ``state_transition`` event ``verified → done``
-     with reasoning citing the merge SHA + the verdict comment URL.
-   - DO NOT wait for any external signal; PASS = ship. If the merge
-     fails (CI red on main, conflict, branch protection), emit
-     ``verified → blocked`` with the ``gh`` stderr verbatim.
+
+   ```bash
+   # 7.a — merge the PR.
+   if MERGE_OUT=$(gh pr merge --squash --delete-branch "$PR_URL" 2>&1); then
+       MERGE_SHA=$(echo "$MERGE_OUT" | grep -oE '[a-f0-9]{40}' | head -1)
+       gh issue close "$ISSUE_N" --reason completed
+       # 7.b — emit final verified → done event with the merge SHA.
+       curl -fsS -X POST \
+         -H "Authorization: Bearer $FOUNDRY_EVENT_INGEST_SECRET" \
+         -H "Content-Type: application/json" \
+         "$FOUNDRY_BACKEND_URL/api/autonomous-org/foundry/projects/$FOUNDRY_PROJECT_ID/event" \
+         -d "$(jq -n --arg n "$ISSUE_N" --arg sha "$MERGE_SHA" --arg verdict "$VERDICT_URL" '{
+           kind: "transition_started",
+           issue_number: ($n | tonumber),
+           from_state: "verified",
+           to_state: "done",
+           role_id: "verifier",
+           reasoning_text: ("merged at " + $sha + "; verdict " + $verdict),
+           payload: {merge_sha: $sha, verdict_url: $verdict}
+         }')"
+   else
+       # 7.c — merge failed (CI red, branch protection, rate limit).
+       # Record the failure but the PASS verdict from step 6 stays as-is.
+       curl -fsS -X POST \
+         -H "Authorization: Bearer $FOUNDRY_EVENT_INGEST_SECRET" \
+         -H "Content-Type: application/json" \
+         "$FOUNDRY_BACKEND_URL/api/autonomous-org/foundry/projects/$FOUNDRY_PROJECT_ID/event" \
+         -d "$(jq -n --arg n "$ISSUE_N" --arg err "$MERGE_OUT" '{
+           kind: "transition_started",
+           issue_number: ($n | tonumber),
+           from_state: "verified",
+           to_state: "blocked",
+           role_id: "verifier",
+           reasoning_text: ("gh pr merge failed: " + $err),
+           payload: {error: $err}
+         }')"
+   fi
+   ```
+
+   DO NOT wait for any external signal; PASS = ship.
 8. **Be specific**. A FAIL reasoning that says "looks bad" is useless.
    A FAIL that says "polish=6: hover state on Send button uses default
    browser `cursor: pointer` ring (rgb(0,0,255) 2px) instead of the
