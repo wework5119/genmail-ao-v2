@@ -169,7 +169,7 @@ export default function ThreadList() {
   return (
     <div
       ref={listRef}
-      className="flex-1 scrollable"
+      className="flex-1 scrollable divide-y divide-border"
       tabIndex={0}
       role="listbox"
       aria-label="Thread list"
@@ -185,7 +185,6 @@ export default function ThreadList() {
               navigateToThread(thread.id)
             }}
           />
-          <div className="mx-4 border-b border-border last:border-b-0" />
         </div>
       ))}
 
