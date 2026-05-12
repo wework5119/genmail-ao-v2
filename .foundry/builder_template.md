@@ -89,9 +89,39 @@ Typically one of:
    grid, the test transcript, a short list of behavior changes, and
    your own pre-flight design self-assessment (visual_hierarchy /
    restraint / polish, scored honestly).
-8. **Emit `<state> → built`** with reasoning naming the artifact
-   (`artifact://github.com/wework5119/genmail-ao-v2/pull/{N}` +
-   `screenshot://public-blob/{key}`).
+8. **Emit `<state> → built` AND flip the issue label.** This is the
+   handoff — without these two side-effects the orchestrator can't see
+   that you're done and the verifier never gets dispatched. "Emit"
+   means: run these exact commands. Do NOT just decide in your head
+   that you're done.
+
+   ```bash
+   # 8.a — POST the state transition event. ISSUE_N + REPO are
+   # pre-bound in the prompt's Environment section.
+   curl -fsS -X POST \
+     -H "Authorization: Bearer $FOUNDRY_EVENT_INGEST_SECRET" \
+     -H "Content-Type: application/json" \
+     "$FOUNDRY_BACKEND_URL/api/autonomous-org/foundry/projects/$FOUNDRY_PROJECT_ID/event" \
+     -d "$(jq -n --arg n "$ISSUE_N" --arg reason "$REASONING" --arg pr "$PR_URL" '{
+       kind: "transition_started",
+       issue_number: ($n | tonumber),
+       from_state: "proposed",
+       to_state: "built",
+       role_id: "builder",
+       reasoning_text: $reason,
+       payload: {pr_url: $pr}
+     }')"
+
+   # 8.b — flip the GitHub label so the orchestrator's routing sees
+   # the handoff. label IS the state in v5 (no separate state store).
+   gh issue edit "$ISSUE_N" --repo "$REPO" \
+     --remove-label proposed --remove-label designed \
+     --add-label built
+   ```
+
+   `$REASONING` example: ``"Implemented thread detail view per AC1–10;
+   pnpm test 81/81 pass; design self-score VH=8.5 R=9 P=9 (min=8.5
+   ≥ 8); PR + multi-state screenshot grid at $PR_URL."``
 9. **After step 8 you are DONE for this dispatch.** The verifier
    owns the merge — on PASS verdict it runs ``gh pr merge`` itself
    and emits ``verified → done`` (G2 operator-+1 gate retired
