@@ -155,8 +155,16 @@ export function useSearch({
         if (requestIdRef.current !== requestId) return // stale
         clearTimeout(spinnerTimerRef.current!)
         spinnerTimerRef.current = null
-        const message = err instanceof Error ? err.message : 'Search failed'
-        dispatch({ type: 'SEARCH_FAILURE', payload: message })
+        // Sanitize raw IPC/network errors — never expose internals to the UI
+        const rawMessage = err instanceof Error ? err.message : ''
+        const isNotFound = rawMessage.includes('404')
+        const isNetwork = rawMessage.toLowerCase().includes('network') || rawMessage.toLowerCase().includes('fetch')
+        const userMessage = isNotFound
+          ? 'No results found for this query.'
+          : isNetwork
+            ? 'Network error. Check your connection and try again.'
+            : 'Search is temporarily unavailable. Please try again.'
+        dispatch({ type: 'SEARCH_FAILURE', payload: userMessage })
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, accountId])

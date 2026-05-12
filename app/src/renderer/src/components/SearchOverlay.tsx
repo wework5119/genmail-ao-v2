@@ -241,9 +241,9 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
       onClick={handleBackdropClick}
       data-testid="search-overlay"
     >
-      {/* Backdrop */}
+      {/* Backdrop — pointer-events-none so clicks pass through to the outer container handler */}
       <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-none"
         aria-hidden="true"
       />
 
@@ -263,7 +263,7 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
         <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-100">
           {/* Search icon */}
           <svg
-            className="flex-shrink-0 w-4 h-4 text-neutral-400"
+            className="flex-shrink-0 w-4 h-4 text-neutral-500"
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
@@ -288,7 +288,7 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
             }
             className={[
               'flex-1 bg-transparent text-sm text-text-primary',
-              'placeholder:text-neutral-400',
+              'placeholder:text-neutral-500',
               'focus:outline-none',
               'caret-accent-500'
             ].join(' ')}
@@ -338,7 +338,7 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
 
           {/* Esc hint */}
           <kbd
-            className="flex-shrink-0 hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 text-2xs font-mono text-neutral-400 bg-neutral-50 border border-neutral-200 rounded"
+            className="flex-shrink-0 hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 text-2xs font-mono text-neutral-500 bg-neutral-50 border border-neutral-200 rounded"
             aria-hidden="true"
           >
             esc
@@ -363,20 +363,20 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
                 <circle cx="11" cy="11" r="6" />
                 <line x1="16" y1="16" x2="21" y2="21" />
               </svg>
-              <p className="text-sm text-neutral-400 text-center">
+              <p className="text-sm text-neutral-500 text-center">
                 Type to search across all mail
               </p>
               <div className="flex items-center gap-3 mt-1">
-                <span className="flex items-center gap-1 text-2xs text-neutral-400">
+                <span className="flex items-center gap-1 text-2xs text-neutral-500">
                   <kbd className="px-1 py-0.5 font-mono bg-neutral-50 border border-neutral-200 rounded text-2xs">↑</kbd>
                   <kbd className="px-1 py-0.5 font-mono bg-neutral-50 border border-neutral-200 rounded text-2xs">↓</kbd>
                   navigate
                 </span>
-                <span className="flex items-center gap-1 text-2xs text-neutral-400">
+                <span className="flex items-center gap-1 text-2xs text-neutral-500">
                   <kbd className="px-1 py-0.5 font-mono bg-neutral-50 border border-neutral-200 rounded text-2xs">↵</kbd>
                   open
                 </span>
-                <span className="flex items-center gap-1 text-2xs text-neutral-400">
+                <span className="flex items-center gap-1 text-2xs text-neutral-500">
                   <kbd className="px-1 py-0.5 font-mono bg-neutral-50 border border-neutral-200 rounded text-2xs">esc</kbd>
                   dismiss
                 </span>
@@ -400,7 +400,7 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
             >
               {/* Results count hint */}
               <li
-                className="px-4 py-1.5 text-2xs text-neutral-400 font-medium uppercase tracking-wide select-none"
+                className="px-4 py-1.5 text-2xs text-neutral-500 font-medium uppercase tracking-wide select-none"
                 role="presentation"
               >
                 {searchState.results.length === 20
@@ -470,8 +470,27 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
           {/* Error state */}
           {searchState.error && !showInitialState && (
             <div className="flex flex-col items-center justify-center py-10 px-6 gap-2">
-              <p className="text-sm text-danger-500 text-center">
-                {searchState.error}
+              <div className="w-10 h-10 rounded-full bg-danger-50 flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-danger-500"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="10" cy="10" r="7" />
+                  <line x1="10" y1="7" x2="10" y2="10.5" />
+                  <line x1="10" y1="13" x2="10" y2="13.5" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-text-primary text-center">
+                Search unavailable
+              </p>
+              <p className="text-xs text-text-secondary text-center">
+                Something went wrong. Please try again.
               </p>
             </div>
           )}
@@ -480,12 +499,12 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
         {/* Footer hint */}
         {showResults && (
           <div className="flex items-center justify-between px-4 py-2 border-t border-neutral-100 bg-neutral-50/50">
-            <span className="text-2xs text-neutral-400">
+            <span className="text-2xs text-neutral-500">
               Press{' '}
               <kbd className="px-1 py-0.5 font-mono bg-white border border-neutral-200 rounded text-2xs">↵</kbd>
               {' '}to open
             </span>
-            <span className="text-2xs text-neutral-400">
+            <span className="text-2xs text-neutral-500">
               <kbd className="px-1 py-0.5 font-mono bg-white border border-neutral-200 rounded text-2xs">↑</kbd>
               {' '}
               <kbd className="px-1 py-0.5 font-mono bg-white border border-neutral-200 rounded text-2xs">↓</kbd>
