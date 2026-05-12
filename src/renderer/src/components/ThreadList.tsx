@@ -90,7 +90,7 @@ export default function ThreadList() {
     return (
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-4 h-4 border-[1.5px] border-neutral-300 border-t-accent-500 rounded-full animate-spin" />
+          <div className="w-4 h-4 border-[1.5px] border-neutral-400 border-t-accent-600 rounded-full animate-spin" />
           <p className="text-xs text-text-tertiary tracking-wide">Loading…</p>
         </div>
       </div>
@@ -202,7 +202,7 @@ export default function ThreadList() {
 
         {state.loadingMore && (
           <div className="flex items-center justify-center py-5">
-            <div className="w-3.5 h-3.5 border-[1.5px] border-neutral-300 border-t-accent-500 rounded-full animate-spin" />
+            <div className="w-3.5 h-3.5 border-[1.5px] border-neutral-400 border-t-accent-600 rounded-full animate-spin" />
           </div>
         )}
 
