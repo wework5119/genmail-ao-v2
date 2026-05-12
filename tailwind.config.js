@@ -43,11 +43,11 @@ module.exports = {
         text: {
           primary: '#0a0e1a',
           secondary: '#4b5563',
-          tertiary: '#9ca3af',
+          tertiary: '#6b7280',
           inverse: '#ffffff',
           'dark-primary': '#f3f4f6',
           'dark-secondary': '#9ca3af',
-          'dark-tertiary': '#6b7280'
+          'dark-tertiary': '#9ca3af'
         },
         border: {
           DEFAULT: '#eef0f2',

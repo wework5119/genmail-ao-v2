@@ -64,7 +64,7 @@ describe('ThreadRow', () => {
         onDoubleClick={() => {}}
       />
     )
-    const dot = container.querySelector('.rounded-full.bg-accent-500')
+    const dot = container.querySelector('.rounded-full.bg-accent-600')
     expect(dot).toBeTruthy()
   })
 
@@ -77,7 +77,7 @@ describe('ThreadRow', () => {
         onDoubleClick={() => {}}
       />
     )
-    const dot = container.querySelector('.rounded-full.bg-accent-500')
+    const dot = container.querySelector('.rounded-full.bg-accent-600')
     expect(dot).toBeFalsy()
   })
 })

@@ -42,10 +42,10 @@ export const tokens = {
     bold: '700'
   },
   color: {
-    accent: '#3b82f6',
-    accentHover: '#2563eb',
-    unread: '#3b82f6',
-    error: '#ef4444',
+    accent: '#2563eb',
+    accentHover: '#1d4ed8',
+    unread: '#2563eb',
+    error: '#dc2626',
     success: '#22c55e',
     warning: '#f59e0b'
   },

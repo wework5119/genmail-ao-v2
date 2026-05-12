@@ -44,7 +44,7 @@ export default function ThreadRow({
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 pt-0.5">
           {thread.unread ? (
-            <div className="w-2 h-2 rounded-full bg-accent-500 mt-[5px]" />
+            <div className="w-2 h-2 rounded-full bg-accent-600 mt-[5px]" />
           ) : (
             <div className="w-2 h-2 rounded-full bg-transparent mt-[5px]" />
           )}

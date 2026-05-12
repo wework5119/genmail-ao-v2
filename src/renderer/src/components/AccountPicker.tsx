@@ -26,7 +26,7 @@ export default function AccountPicker() {
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-500 w-full text-left"
       >
-        <div className="w-5 h-5 rounded-full bg-accent-500 flex items-center justify-center flex-shrink-0">
+        <div className="w-5 h-5 rounded-full bg-accent-600 flex items-center justify-center flex-shrink-0">
           <span className="text-[11px] font-medium text-white leading-none">
             {selected?.name?.charAt(0) ?? '?'}
           </span>
@@ -67,7 +67,7 @@ export default function AccountPicker() {
                   : 'hover:bg-neutral-50'
               }`}
             >
-              <div className="w-6 h-6 rounded-full bg-accent-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-6 h-6 rounded-full bg-accent-600 flex items-center justify-center flex-shrink-0">
                 <span className="text-xs font-medium text-white leading-none">
                   {account.name.charAt(0)}
                 </span>
@@ -82,7 +82,7 @@ export default function AccountPicker() {
               </div>
               {account.id === state.selectedAccountId && (
                 <svg
-                  className="w-4 h-4 text-accent-500 flex-shrink-0"
+                  className="w-4 h-4 text-accent-600 flex-shrink-0"
                   viewBox="0 0 16 16"
                   fill="currentColor"
                 >

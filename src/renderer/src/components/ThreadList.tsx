@@ -66,7 +66,7 @@ export default function ThreadList() {
     return (
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-5 h-5 border-2 border-neutral-200 border-t-accent-500 rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-neutral-400 border-t-accent-600 rounded-full animate-spin" />
           <p className="text-sm text-text-tertiary">Loading threads...</p>
         </div>
       </div>
@@ -77,9 +77,9 @@ export default function ThreadList() {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="flex flex-col items-center gap-4 max-w-xs text-center">
-          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
             <svg
-              className="w-5 h-5 text-red-500"
+              className="w-5 h-5 text-red-600"
               viewBox="0 0 16 16"
               fill="currentColor"
             >
@@ -157,7 +157,7 @@ export default function ThreadList() {
 
       {state.loadingMore && (
         <div className="flex items-center justify-center py-4">
-          <div className="w-4 h-4 border-2 border-neutral-200 border-t-accent-500 rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-neutral-400 border-t-accent-600 rounded-full animate-spin" />
         </div>
       )}
 

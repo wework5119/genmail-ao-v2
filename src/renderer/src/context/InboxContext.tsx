@@ -212,9 +212,9 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(() => {
     if (state.selectedAccountId) {
       dispatch({ type: 'REFRESH' })
-      loadAfterInit.current = true
+      fetchThreads(state.selectedAccountId)
     }
-  }, [state.selectedAccountId])
+  }, [state.selectedAccountId, fetchThreads])
 
   const retry = useCallback(() => {
     if (state.selectedAccountId) {
