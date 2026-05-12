@@ -24,7 +24,7 @@ export default function AccountPicker() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-500 w-full text-left"
+        className="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-600 w-full text-left"
         aria-haspopup="listbox"
         aria-expanded={open}
       >

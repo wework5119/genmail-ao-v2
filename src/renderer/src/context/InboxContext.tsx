@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef, useState } from 'react'
 import { getAccounts, listThreads } from '../lib/ipc'
 import { inboxReducer, initialState } from './inboxReducer'
 import type { InboxState } from './inboxReducer'
@@ -17,7 +17,9 @@ const InboxContext = createContext<InboxContextValue | null>(null)
 
 export function InboxProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(inboxReducer, initialState)
-  const loadAfterInit = useRef(false)
+  // refreshKey increments on each R-key refresh, causing the load effect to re-run
+  const [refreshKey, setRefreshKey] = useState(0)
+  const accountReadyRef = useRef(false)
 
   const fetchThreads = useCallback(
     async (accountId: string, cursor?: string) => {
@@ -47,13 +49,14 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     []
   )
 
+  // Bootstrap: load accounts once on mount
   useEffect(() => {
     getAccounts()
       .then((accounts) => {
         dispatch({ type: 'SET_ACCOUNTS', payload: accounts })
         if (accounts.length > 0) {
           dispatch({ type: 'SELECT_ACCOUNT', payload: accounts[0].id })
-          loadAfterInit.current = true
+          accountReadyRef.current = true
         }
       })
       .catch(() => {
@@ -69,20 +72,21 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
           ]
         })
         dispatch({ type: 'SELECT_ACCOUNT', payload: '1' })
-        loadAfterInit.current = true
+        accountReadyRef.current = true
       })
   }, [])
 
+  // Fetch threads when the selected account changes OR when refreshKey increments
   useEffect(() => {
-    if (state.selectedAccountId && loadAfterInit.current) {
-      loadAfterInit.current = false
+    if (state.selectedAccountId && accountReadyRef.current) {
       fetchThreads(state.selectedAccountId)
     }
-  }, [state.selectedAccountId, fetchThreads])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.selectedAccountId, refreshKey, fetchThreads])
 
   const selectAccount = useCallback((id: string) => {
     dispatch({ type: 'SELECT_ACCOUNT', payload: id })
-    loadAfterInit.current = true
+    accountReadyRef.current = true
   }, [])
 
   const selectThread = useCallback((id: string) => {
@@ -105,14 +109,14 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(() => {
     if (state.selectedAccountId) {
-      const accountId = state.selectedAccountId
+      // Dispatch REFRESH to reset cursor/hasMore, then increment refreshKey
+      // to trigger the load useEffect (which depends on refreshKey).
+      // This avoids any stale-closure issue: the effect always reads the
+      // current selectedAccountId from state at the time it runs.
       dispatch({ type: 'REFRESH' })
-      // Call fetchThreads directly — do NOT rely on the selectedAccountId effect
-      // because selectedAccountId doesn't change during refresh, so the effect
-      // would never re-run and threads would remain permanently cleared.
-      fetchThreads(accountId)
+      setRefreshKey((k) => k + 1)
     }
-  }, [state.selectedAccountId, fetchThreads])
+  }, [state.selectedAccountId])
 
   const retry = useCallback(() => {
     if (state.selectedAccountId) {

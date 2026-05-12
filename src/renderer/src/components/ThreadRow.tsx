@@ -43,7 +43,7 @@ export default function ThreadRow({
       onClick={onSelect}
       onDoubleClick={onDoubleClick}
       aria-selected={selected}
-      className={`group w-full text-left px-4 py-3 transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-500 focus-visible:outline-offset-[-2px] ${
+      className={`group w-full text-left px-4 py-3 transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-600 focus-visible:outline-offset-[-2px] ${
         selected
           ? 'bg-accent-50'
           : 'hover:bg-neutral-50'
