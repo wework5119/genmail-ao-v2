@@ -32,13 +32,13 @@ describe('IPC handler registration', () => {
     vi.clearAllMocks()
   })
 
-  it('registers handlers for all three channels without throwing', () => {
+  it('registers handlers for all four channels without throwing', () => {
     expect(() => registerIpcHandlers()).not.toThrow()
   })
 
-  it('calls ipcMain.handle exactly three times', () => {
+  it('calls ipcMain.handle exactly four times (getAccounts, listThreads, getMessages, searchThreads)', () => {
     registerIpcHandlers()
-    expect(ipcMain.handle).toHaveBeenCalledTimes(3)
+    expect(ipcMain.handle).toHaveBeenCalledTimes(4)
   })
 
   it('registers getAccounts handler', () => {
@@ -65,9 +65,17 @@ describe('IPC handler registration', () => {
     )
   })
 
+  it('registers searchThreads handler', () => {
+    registerIpcHandlers()
+    expect(ipcMain.handle).toHaveBeenCalledWith(
+      'searchThreads',
+      expect.any(Function)
+    )
+  })
+
   it('registration is idempotent (multiple calls do not throw)', () => {
     registerIpcHandlers()
     registerIpcHandlers()
-    expect(ipcMain.handle).toHaveBeenCalledTimes(6)
+    expect(ipcMain.handle).toHaveBeenCalledTimes(8)
   })
 })
