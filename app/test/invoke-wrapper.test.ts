@@ -41,17 +41,19 @@ describe('Typed invoke wrapper (type-level tests)', () => {
     expect(response.nextPageToken).toBe('page-2')
   })
 
-  it('invoke<"getMessages"> request has accountId and threadId', () => {
+  it('invoke<"getMessages"> request has accountId, threadId, and optional pageParams', () => {
     type Req = IpcRequest<'getMessages'>
-    const req: Req = { accountId: 'acc-1', threadId: 'thread-42' }
+    const req: Req = { accountId: 'acc-1', threadId: 'thread-42', pageParams: { pageSize: 20 } }
     expect(req.accountId).toBe('acc-1')
     expect(req.threadId).toBe('thread-42')
+    expect(req.pageParams?.pageSize).toBe(20)
   })
 
-  it('invoke<"getMessages"> response resolves to Message[]', () => {
+  it('invoke<"getMessages"> response resolves to MessageList', () => {
     type Res = IpcResponse<'getMessages'>
-    const messages: Res = []
-    expect(Array.isArray(messages)).toBe(true)
+    const result: Res = { messages: [], hasMore: false, nextPageToken: undefined }
+    expect(Array.isArray(result.messages)).toBe(true)
+    expect(result.hasMore).toBe(false)
   })
 
   it('channel type union works with invoke function signature', () => {

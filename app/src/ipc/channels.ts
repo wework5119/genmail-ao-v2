@@ -59,6 +59,12 @@ export interface Attachment {
   sizeBytes: number
 }
 
+export interface MessageList {
+  messages: Message[]
+  nextPageToken?: string
+  hasMore: boolean
+}
+
 export interface IpcChannelMap {
   getAccounts: {
     request: void
@@ -69,8 +75,8 @@ export interface IpcChannelMap {
     response: ThreadList
   }
   getMessages: {
-    request: { accountId: string; threadId: string }
-    response: Message[]
+    request: { accountId: string; threadId: string; pageParams?: PageParams }
+    response: MessageList
   }
 }
 
