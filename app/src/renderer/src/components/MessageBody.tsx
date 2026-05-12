@@ -37,6 +37,74 @@ function replaceImageSources(html: string, showImages: boolean): string {
   return html
 }
 
+/**
+ * Split HTML body into main content + quoted reply (blockquote at end or
+ * Gmail-style div.gmail_quote). Returns { main, quoted } where quoted may
+ * be undefined if no quoted block is detected.
+ */
+function splitQuotedContent(html: string): { main: string; quoted: string | undefined } {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
+  const body = doc.body
+
+  // Gmail / Outlook quoted markers
+  const gmailQuote = body.querySelector('.gmail_quote, .yahoo_quoted, blockquote[type="cite"]')
+  if (gmailQuote && gmailQuote.parentElement === body) {
+    const quotedHtml = gmailQuote.outerHTML
+    gmailQuote.remove()
+    const mainHtml = body.innerHTML.trim()
+    if (mainHtml.length > 0 && quotedHtml.length > 0) {
+      return { main: mainHtml, quoted: quotedHtml }
+    }
+  }
+
+  // Last top-level blockquote heuristic
+  const topBlockquotes = Array.from(body.children).filter(
+    (el) => el.tagName === 'BLOCKQUOTE'
+  )
+  const lastBlockquote = topBlockquotes[topBlockquotes.length - 1]
+  if (lastBlockquote && topBlockquotes.length >= 1) {
+    const quotedHtml = lastBlockquote.outerHTML
+    lastBlockquote.remove()
+    const mainHtml = body.innerHTML.trim()
+    if (mainHtml.length > 0) {
+      return { main: mainHtml, quoted: quotedHtml }
+    }
+  }
+
+  return { main: html, quoted: undefined }
+}
+
+function ExpandableQuotedText({ html }: { html: string }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="mt-3">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="inline-flex items-center gap-1 px-2 py-0.5 text-2xs font-medium text-text-tertiary bg-neutral-100 hover:bg-neutral-200 rounded transition-colors duration-[120ms]"
+        aria-expanded={expanded}
+        title={expanded ? 'Collapse quoted text' : 'Show quoted text'}
+      >
+        <svg
+          className={`w-2.5 h-2.5 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
+          viewBox="0 0 8 8"
+          fill="currentColor"
+        >
+          <path d="M2 1l4 3-4 3V1z" />
+        </svg>
+        {expanded ? 'Hide quote' : 'Show quote'}
+      </button>
+      {expanded && (
+        <div
+          className="mt-2 message-body text-sm text-text-secondary leading-relaxed border-l-2 border-neutral-200 pl-3"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      )}
+    </div>
+  )
+}
+
 interface MessageBodyProps {
   message: Message
 }
@@ -54,10 +122,21 @@ export default function MessageBody({ message }: MessageBodyProps) {
     return /<img[^>]+src=["']/i.test(message.body)
   }, [message.body, message.bodyType])
 
-  const renderedHtml = useMemo(() => {
+  const { mainHtml, quotedHtml } = useMemo(() => {
+    if (message.bodyType !== 'html') return { mainHtml: '', quotedHtml: undefined }
+    const { main, quoted } = splitQuotedContent(sanitizedHtml)
+    return { mainHtml: main, quotedHtml: quoted }
+  }, [sanitizedHtml, message.bodyType])
+
+  const renderedMain = useMemo(() => {
     if (message.bodyType !== 'html') return ''
-    return replaceImageSources(sanitizedHtml, showImages)
-  }, [sanitizedHtml, showImages, message.bodyType])
+    return replaceImageSources(mainHtml, showImages)
+  }, [mainHtml, showImages, message.bodyType])
+
+  const renderedQuoted = useMemo(() => {
+    if (!quotedHtml) return undefined
+    return replaceImageSources(quotedHtml, showImages)
+  }, [quotedHtml, showImages])
 
   if (message.bodyType === 'html') {
     return (
@@ -76,8 +155,9 @@ export default function MessageBody({ message }: MessageBodyProps) {
         )}
         <div
           className="message-body text-sm text-text-primary leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: renderedHtml }}
+          dangerouslySetInnerHTML={{ __html: renderedMain }}
         />
+        {renderedQuoted && <ExpandableQuotedText html={renderedQuoted} />}
       </div>
     )
   }

@@ -329,12 +329,15 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'CLEAR_MESSAGES' })
       dispatch({ type: 'SELECT_THREAD', payload: threadId })
       dispatch({ type: 'NAVIGATE', payload: 'thread' })
+      // Reflect thread selection in URL hash for AC1
+      window.location.hash = `thread/${encodeURIComponent(threadId)}`
     },
     []
   )
 
   const navigateToInbox = useCallback(() => {
     dispatch({ type: 'NAVIGATE', payload: 'inbox' })
+    window.location.hash = ''
   }, [])
 
   const loadMessages = useCallback(async () => {
