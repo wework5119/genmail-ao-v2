@@ -1,7 +1,9 @@
 export const IPC_CHANNELS = {
   GET_ACCOUNTS: 'getAccounts',
   LIST_THREADS: 'listThreads',
-  GET_MESSAGES: 'getMessages'
+  GET_MESSAGES: 'getMessages',
+  SEND_MESSAGE: 'sendMessage',
+  AI_DRAFT: 'aiDraft'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -59,6 +61,43 @@ export interface Attachment {
   sizeBytes: number
 }
 
+export interface EmailAddress {
+  name?: string
+  address: string
+}
+
+export interface SendMessageRequest {
+  accountId: string
+  to: EmailAddress[]
+  cc?: EmailAddress[]
+  subject: string
+  body: string
+  /** If replying, the threadId to attach to */
+  replyToThreadId?: string
+  /** Original message id for In-Reply-To header */
+  replyToMessageId?: string
+}
+
+export interface SendMessageResponse {
+  messageId: string
+  threadId: string
+  sentAt: string
+}
+
+export interface AiDraftRequest {
+  accountId: string
+  to: EmailAddress[]
+  subject: string
+  /** Optional context: prior messages for reply drafting */
+  context?: string
+  /** 'compose' for new email, 'reply' for reply assist */
+  mode: 'compose' | 'reply'
+}
+
+export interface AiDraftResponse {
+  draft: string
+}
+
 export interface IpcChannelMap {
   getAccounts: {
     request: void
@@ -71,6 +110,14 @@ export interface IpcChannelMap {
   getMessages: {
     request: { accountId: string; threadId: string }
     response: Message[]
+  }
+  sendMessage: {
+    request: SendMessageRequest
+    response: SendMessageResponse
+  }
+  aiDraft: {
+    request: AiDraftRequest
+    response: AiDraftResponse
   }
 }
 

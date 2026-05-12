@@ -1,6 +1,14 @@
 import { ipcMain } from 'electron'
 import { IPC_CHANNELS } from '../ipc/channels'
-import type { Account, ThreadList, Message } from '../ipc/channels'
+import type {
+  Account,
+  ThreadList,
+  Message,
+  SendMessageRequest,
+  SendMessageResponse,
+  AiDraftRequest,
+  AiDraftResponse
+} from '../ipc/channels'
 import { credentialStore } from './credential-store'
 
 const GENMAIL_API_BASE_URL = process.env.GENMAIL_API_BASE_URL ?? 'https://api.genmail.app'
@@ -84,6 +92,42 @@ export function registerIpcHandlers(): void {
       })
       if (!res.ok) {
         throw new Error(`Failed to get messages: ${res.status} ${res.statusText}`)
+      }
+      return res.json()
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.SEND_MESSAGE,
+    async (_event, payload: SendMessageRequest): Promise<SendMessageResponse> => {
+      const { accountId, ...messageData } = payload
+      const baseUrl = apiBaseUrl()
+      const url = `${baseUrl}/api/ai-inbox/${encodeURIComponent(accountId)}/send`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: authHeaders(accountId),
+        body: JSON.stringify(messageData)
+      })
+      if (!res.ok) {
+        throw new Error(`Failed to send message: ${res.status} ${res.statusText}`)
+      }
+      return res.json()
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.AI_DRAFT,
+    async (_event, payload: AiDraftRequest): Promise<AiDraftResponse> => {
+      const { accountId, ...draftData } = payload
+      const baseUrl = apiBaseUrl()
+      const url = `${baseUrl}/api/ai-inbox/${encodeURIComponent(accountId)}/compose/draft`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: authHeaders(accountId),
+        body: JSON.stringify(draftData)
+      })
+      if (!res.ok) {
+        throw new Error(`Failed to generate AI draft: ${res.status} ${res.statusText}`)
       }
       return res.json()
     }
