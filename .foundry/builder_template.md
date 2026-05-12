@@ -85,10 +85,53 @@ Typically one of:
      **every state of the affected surface** (default / hover /
      focus / loading / empty / error / dark mode) via agent-browser
      and upload to public blob.
+
+6a. **Pre-flight: dark mode check** (mandatory before `gh pr create`):
+   - Toggle dark mode in the running Electron app (via the app's
+     theme toggle or by invoking `window.matchMedia` override in the
+     CDP console: `window.__setTheme?.('dark')` or equivalent).
+   - Capture a screenshot of **every state of the affected surface**
+     in dark mode (default / hover / focus / loading / empty / error).
+   - Audit every visible component: if **any component has zero
+     `dark:` Tailwind classes**, you must NOT open the PR — add the
+     missing `dark:` classes and repeat from step 6a.
+   - Record which components received `dark:` classes and the dark
+     background / text token pairs used (e.g.,
+     `dark:bg-neutral-900 dark:text-neutral-100`).
+   - The dark-mode screenshots go into the PR multi-state grid.
+   - The dark token list goes into the PR self-assessment block (see
+     step 7).
+
+6b. **Pre-flight: contrast matrix** (mandatory before `gh pr create`):
+   - For **every foreground / background color pair** in every
+     interactive state of the surface (default, hover, focus,
+     selected, disabled, error, placeholder — in both light AND dark
+     mode), compute the WCAG AA contrast ratio.
+   - Use the formula or a tool such as:
+     ```
+     # quick ratio check via node (no dependencies)
+     node -e "
+       const c=(h)=>{const r=parseInt(h.slice(1,3),16)/255,g=parseInt(h.slice(3,5),16)/255,b=parseInt(h.slice(5,7),16)/255;const l=(x)=>x<=0.04045?x/12.92:((x+0.055)/1.055)**2.4;const L=0.2126*l(r)+0.7152*l(g)+0.0722*l(b);return L;};
+       const ratio=(fg,bg)=>{const Lf=c(fg),Lb=c(bg);const [l1,l2]=[Math.max(Lf,Lb),Math.min(Lf,Lb)];return ((l1+0.05)/(l2+0.05)).toFixed(2);};
+       console.log(ratio('#6b7280','#ffffff')); // replace with your pairs
+     "
+     ```
+   - WCAG AA thresholds:
+     - Normal text (< 18 px regular / < 14 px bold): **≥ 4.5:1**
+     - Large text (≥ 18 px regular or ≥ 14 px bold): **≥ 3:1**
+     - UI components / graphical objects (icons, borders): **≥ 3:1**
+   - **Any pair below its threshold is a pre-flight blocker** — fix
+     the token or color choice before opening the PR, then re-run
+     the matrix. Common traps: selected-row states, placeholder text,
+     disabled button labels, dark-mode secondary text on dark cards.
+   - List all pairs and ratios in the PR body under a collapsible
+     `<details>` block (see step 7 for required format).
+
 7. **Open the PR** with body containing: the multi-state screenshot
-   grid, the test transcript, a short list of behavior changes, and
-   your own pre-flight design self-assessment (visual_hierarchy /
-   restraint / polish, scored honestly).
+   grid (light + dark), the test transcript, a short list of behavior
+   changes, the contrast matrix `<details>` block, and your own
+   pre-flight design self-assessment (visual_hierarchy / restraint /
+   polish / dark_mode, scored honestly).
 8. **Emit `<state> → built` AND flip the issue label.** This is the
    handoff — without these two side-effects the orchestrator can't see
    that you're done and the verifier never gets dispatched. "Emit"
@@ -120,8 +163,35 @@ Typically one of:
    ```
 
    `$REASONING` example: ``"Implemented thread detail view per AC1–10;
-   pnpm test 81/81 pass; design self-score VH=8.5 R=9 P=9 (min=8.5
-   ≥ 8); PR + multi-state screenshot grid at $PR_URL."``
+   pnpm test 81/81 pass; design self-score VH=8.5 R=9 P=9 DM=9
+   (min=8.5 ≥ 8); contrast matrix all pairs ≥ 4.5:1 light+dark;
+   PR + multi-state screenshot grid (light+dark) at $PR_URL."``
+
+   **Required PR body sections**:
+
+   ```markdown
+   ## Self-assessment
+
+   | Axis             | Score | Notes |
+   |------------------|-------|-------|
+   | Visual hierarchy | /10   | ... |
+   | Restraint        | /10   | ... |
+   | Polish           | /10   | ... |
+   | **Dark mode**    | /10   | Components with dark: classes: [list]. Dark tokens used: [bg / text / border pairs]. |
+
+   <details>
+   <summary>Contrast matrix (WCAG AA)</summary>
+
+   | State    | Foreground token / hex | Background token / hex | Ratio | AA? |
+   |----------|------------------------|------------------------|-------|-----|
+   | default  | text-primary #111827   | bg-white #ffffff       | 16.1  | ✅  |
+   | hover    | ...                    | ...                    | ...   | ... |
+   | selected | text-neutral-500 #6b7280 | bg-accent-50 #eff6ff  | 4.63  | ✅  |
+   | dark/def | text-neutral-100 #f3f4f6 | bg-neutral-900 #111827 | 12.5 | ✅  |
+   | ...      | ...                    | ...                    | ...   | ... |
+
+   </details>
+   ```
 9. **After step 8 you are DONE for this dispatch.** The verifier
    owns the merge — on PASS verdict it runs ``gh pr merge`` itself
    and emits ``verified → done`` (G2 operator-+1 gate retired
