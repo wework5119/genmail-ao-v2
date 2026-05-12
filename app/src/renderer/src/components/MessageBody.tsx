@@ -98,18 +98,17 @@ function ExpandableQuotedText({ html }: { html: string }) {
     <div className="mt-3">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="inline-flex items-center gap-1 px-2 py-0.5 text-2xs font-medium text-text-tertiary bg-neutral-100 hover:bg-neutral-200 rounded transition-colors duration-[120ms]"
+        className="inline-flex items-center gap-1.5 px-2 py-1 text-2xs font-medium text-text-tertiary bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors duration-[120ms]"
         aria-expanded={expanded}
         title={expanded ? 'Collapse quoted text' : 'Show quoted text'}
       >
-        <svg
-          className={`w-2.5 h-2.5 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
-          viewBox="0 0 8 8"
-          fill="currentColor"
-        >
-          <path d="M2 1l4 3-4 3V1z" />
+        {/* Three-dots icon for quoted text (common mail client convention) */}
+        <svg className="w-3 h-3" viewBox="0 0 12 4" fill="currentColor">
+          <circle cx="1.5" cy="2" r="1.5" />
+          <circle cx="6" cy="2" r="1.5" />
+          <circle cx="10.5" cy="2" r="1.5" />
         </svg>
-        {expanded ? 'Hide quote' : 'Show quote'}
+        {expanded ? 'Hide quoted text' : 'Show quoted text'}
       </button>
       {expanded && (
         <div
@@ -158,16 +157,22 @@ export default function MessageBody({ message }: MessageBodyProps) {
     return (
       <div>
         {hasImages && !showImages && (
-          <button
-            onClick={() => setShowImages(true)}
-            className="mb-3 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-accent-blue bg-accent-blueLight rounded-full hover:bg-blue-100 transition-colors duration-[120ms]"
-          >
-            <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M2 2.5A1.5 1.5 0 013.5 1h9A1.5 1.5 0 0114 2.5v11a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13.5v-11zM3.5 2a.5.5 0 00-.5.5v11a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-11a.5.5 0 00-.5-.5h-9z" />
-              <path d="M4 4h8v1H4V4zm0 2h8v1H4V6zm0 2h5v1H4V8zm0 2h8v1H4v-1z" />
+          <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-neutral-50 border border-border rounded-md">
+            <svg className="w-3.5 h-3.5 text-text-tertiary flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="1" width="14" height="14" rx="2" />
+              <path d="M1 11l4-4 3 3 3-4 4 5" />
+              <circle cx="5.5" cy="5.5" r="1" fill="currentColor" stroke="none" />
             </svg>
-            Show images
-          </button>
+            <span className="text-2xs text-text-secondary flex-1">
+              Images are blocked to protect your privacy
+            </span>
+            <button
+              onClick={() => setShowImages(true)}
+              className="text-2xs font-medium text-accent-600 hover:text-accent-700 transition-colors duration-[120ms] whitespace-nowrap"
+            >
+              Show images
+            </button>
+          </div>
         )}
         <div
           className="message-body text-sm text-text-primary leading-relaxed"

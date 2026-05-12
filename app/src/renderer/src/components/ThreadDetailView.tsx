@@ -14,7 +14,9 @@ export default function ThreadDetailView() {
     navigateToInbox
   } = useInbox()
 
-  const scrollRef = useRef<HTMLDivElement>(null)
+  // Ref for the scrollable messages container — used as root for IntersectionObserver
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  // Sentinel at the top of messages to detect "scrolled to top" for loading older messages
   const topSentinelRef = useRef<HTMLDivElement>(null)
   const loadedForThreadId = useRef<string | null>(null)
 
@@ -44,9 +46,13 @@ export default function ThreadDetailView() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
+  // Observe the top sentinel using the scroll container as the root so the observer
+  // only fires when the user actually scrolls up to the top of the messages list,
+  // not immediately on mount when the sentinel is incidentally in the viewport.
   useEffect(() => {
-    const el = topSentinelRef.current
-    if (!el) return
+    const sentinel = topSentinelRef.current
+    const scrollContainer = scrollContainerRef.current
+    if (!sentinel || !scrollContainer) return
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -58,10 +64,10 @@ export default function ThreadDetailView() {
           loadMoreMessages()
         }
       },
-      { threshold: 0.1 }
+      { root: scrollContainer, rootMargin: '80px 0px 0px 0px', threshold: 0 }
     )
 
-    observer.observe(el)
+    observer.observe(sentinel)
     return () => observer.disconnect()
   }, [state.messagesHasMore, state.messagesLoadingMore, loadMoreMessages])
 
@@ -82,7 +88,7 @@ export default function ThreadDetailView() {
           <div className="flex items-center gap-3 px-4 h-12">
             <button
               onClick={handleBack}
-              className="p-1.5 -ml-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] focus-visible:outline-2 focus-visible:outline-accent-500"
+              className="flex items-center justify-center w-7 h-7 -ml-1 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] focus-visible:outline-2 focus-visible:outline-accent-500"
               aria-label="Back to inbox (Escape)"
               title="Back to inbox (Esc)"
             >
@@ -128,12 +134,12 @@ export default function ThreadDetailView() {
             <p className="text-sm font-medium text-text-primary">
               Failed to load messages
             </p>
-            <p className="text-xs text-text-tertiary">{state.messagesError}</p>
+            <p className="text-xs text-text-tertiary leading-relaxed">{state.messagesError}</p>
             <button
               onClick={retryMessages}
-              className="px-3 py-1.5 text-sm font-medium text-accent-blue hover:bg-accent-blueLight rounded-md transition-colors duration-[120ms]"
+              className="px-3 py-1.5 text-sm font-medium bg-white border border-border text-text-primary rounded-md hover:bg-neutral-50 transition-colors duration-[120ms] shadow-sm"
             >
-              Retry
+              Try again
             </button>
           </div>
         </div>
@@ -179,7 +185,7 @@ export default function ThreadDetailView() {
   }
 
   return (
-    <div className="flex-1 flex flex-col" ref={scrollRef}>
+    <div className="flex-1 flex flex-col min-h-0">
       <HeaderBar subject={selectedThread?.subject} onBack={handleBack} />
 
       <ThreadMetadataBar
@@ -187,20 +193,23 @@ export default function ThreadDetailView() {
         participantNames={participantNames}
       />
 
-      <div className="flex-1 overflow-y-auto scrollable">
-        <div ref={topSentinelRef} className="h-px" />
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scrollable min-h-0">
+        {/* Top sentinel — observed relative to the scroll container so the observer only
+            fires when the user scrolls to the top, not on initial mount. */}
+        <div ref={topSentinelRef} className="h-px" aria-hidden="true" />
 
         {state.messagesLoadingMore && (
-          <div className="flex items-center justify-center py-4">
-            <div className="w-4 h-4 border-2 border-neutral-200 border-t-accent-blue rounded-full animate-spin" />
+          <div className="flex items-center justify-center gap-2 py-4 text-xs text-text-tertiary">
+            <div className="w-3.5 h-3.5 border-2 border-neutral-200 border-t-accent-500 rounded-full animate-spin" />
+            Loading earlier messages
           </div>
         )}
 
         {!state.messagesLoadingMore && state.messagesHasMore && (
-          <div className="flex items-center justify-center py-3 border-b border-border">
+          <div className="flex items-center justify-center py-3">
             <button
               onClick={loadMoreMessages}
-              className="px-3 py-1.5 text-xs font-medium text-accent-blue hover:bg-accent-blueLight rounded-md transition-colors duration-[120ms]"
+              className="px-3 py-1.5 text-xs font-medium text-text-secondary bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors duration-[120ms]"
             >
               Load earlier messages
             </button>
@@ -220,7 +229,7 @@ export default function ThreadDetailView() {
           ))}
         </div>
 
-        <div className="h-8" />
+        <div className="h-10" />
       </div>
     </div>
   )
@@ -234,11 +243,11 @@ function HeaderBar({
   onBack: () => void
 }) {
   return (
-    <div className="sticky top-0 z-10 bg-surface border-b border-border">
-      <div className="flex items-center gap-3 px-4 h-12">
+    <div className="sticky top-0 z-10 bg-surface border-b border-border flex-shrink-0">
+      <div className="flex items-center gap-2.5 px-4 h-12">
         <button
           onClick={onBack}
-          className="p-1.5 -ml-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] focus-visible:outline-2 focus-visible:outline-accent-500"
+          className="flex items-center justify-center w-7 h-7 -ml-1 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] focus-visible:outline-2 focus-visible:outline-accent-500 flex-shrink-0"
           aria-label="Back to inbox"
           title="Back to inbox (Esc)"
         >
@@ -254,7 +263,7 @@ function HeaderBar({
             <path d="M10 12L6 8l4-4" />
           </svg>
         </button>
-        <h1 className="text-sm font-semibold text-text-primary truncate">
+        <h1 className="text-sm font-semibold text-text-primary truncate leading-none">
           {subject ?? 'Thread'}
         </h1>
       </div>
