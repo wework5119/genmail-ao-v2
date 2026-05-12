@@ -19,6 +19,10 @@ export default function ThreadDetailView() {
   // Sentinel at the top of messages to detect "scrolled to top" for loading older messages
   const topSentinelRef = useRef<HTMLDivElement>(null)
   const loadedForThreadId = useRef<string | null>(null)
+  // Container ref: focused on mount so Escape / keyboard events work immediately
+  const containerRef = useRef<HTMLDivElement>(null)
+  // Scroll anchor: preserve scroll offset when prepending older messages
+  const prevScrollHeightRef = useRef<number>(0)
 
   useEffect(() => {
     // Load messages when component mounts or when selectedThreadId changes to a new thread
@@ -30,6 +34,31 @@ export default function ThreadDetailView() {
       loadMessages()
     }
   }, [loadMessages, state.selectedThreadId])
+
+  // Focus the container on mount so keyboard events (Escape) work immediately
+  // without requiring the user to click into the detail pane first.
+  useEffect(() => {
+    containerRef.current?.focus({ preventScroll: true })
+  }, [])
+
+  // Scroll anchor: capture scroll height before loading more messages so we can
+  // restore the relative position after older messages are prepended to the list.
+  useEffect(() => {
+    if (state.messagesLoadingMore && scrollContainerRef.current) {
+      prevScrollHeightRef.current = scrollContainerRef.current.scrollHeight
+    }
+  }, [state.messagesLoadingMore])
+
+  useEffect(() => {
+    if (!state.messagesLoadingMore && prevScrollHeightRef.current > 0 && scrollContainerRef.current) {
+      const newScrollHeight = scrollContainerRef.current.scrollHeight
+      const delta = newScrollHeight - prevScrollHeightRef.current
+      if (delta > 0) {
+        scrollContainerRef.current.scrollTop += delta
+      }
+      prevScrollHeightRef.current = 0
+    }
+  }, [state.messagesLoadingMore])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -83,7 +112,7 @@ export default function ThreadDetailView() {
 
   if (state.messagesLoading && state.messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col">
+      <div ref={containerRef} tabIndex={-1} className="flex-1 flex flex-col outline-none">
         <div className="sticky top-0 z-10 bg-surface border-b border-border">
           <div className="flex items-center gap-3 px-4 h-12">
             <button
@@ -114,7 +143,7 @@ export default function ThreadDetailView() {
 
   if (state.messagesError && state.messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col">
+      <div ref={containerRef} tabIndex={-1} className="flex-1 flex flex-col outline-none">
         <HeaderBar subject={selectedThread?.subject} onBack={handleBack} />
         <div className="flex-1 flex items-center justify-center px-6 py-12">
           <div className="flex flex-col items-center gap-4 max-w-xs text-center">
@@ -153,7 +182,7 @@ export default function ThreadDetailView() {
     !state.messagesError
   ) {
     return (
-      <div className="flex-1 flex flex-col">
+      <div ref={containerRef} tabIndex={-1} className="flex-1 flex flex-col outline-none">
         <HeaderBar subject={selectedThread?.subject} onBack={handleBack} />
         <div className="flex-1 flex items-center justify-center px-6 py-12">
           <div className="flex flex-col items-center gap-4 max-w-xs text-center">
@@ -185,7 +214,7 @@ export default function ThreadDetailView() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div ref={containerRef} tabIndex={-1} className="flex-1 flex flex-col min-h-0 outline-none">
       <HeaderBar subject={selectedThread?.subject} onBack={handleBack} />
 
       <ThreadMetadataBar
