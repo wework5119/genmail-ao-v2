@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { IPC_CHANNELS } from '../src/ipc/channels'
-import type { IpcChannel, IpcChannelMap, IpcRequest, IpcResponse, Account, ThreadList, Message, PageParams } from '../src/ipc/channels'
+import type { IpcChannel, IpcChannelMap, IpcRequest, IpcResponse, Account, ThreadList, Message, MessageList, PageParams } from '../src/ipc/channels'
 
 describe('IPC channel registry', () => {
   it('defines all required channel constants', () => {
@@ -43,11 +43,12 @@ describe('IPC channel type map', () => {
     expect(req.pageParams.pageSize).toBe(20)
   })
 
-  it('getMessages has accountId and threadId request', () => {
+  it('getMessages has accountId, threadId, and optional pageParams request', () => {
     type Req = IpcRequest<'getMessages'>
-    const req: Req = { accountId: 'acc-1', threadId: 'thread-123' }
+    const req: Req = { accountId: 'acc-1', threadId: 'thread-123', pageParams: { pageSize: 20 } }
     expect(req.accountId).toBe('acc-1')
     expect(req.threadId).toBe('thread-123')
+    expect(req.pageParams?.pageSize).toBe(20)
   })
 
   it('Account type has required fields', () => {
@@ -118,10 +119,11 @@ describe('IPC channel map compiles correctly', () => {
 
     const accounts: GetAccountsRes = []
     const threads: ListThreadsRes = { threads: [], totalEstimate: 0 }
-    const messages: GetMessagesRes = []
+    const messageList: GetMessagesRes = { messages: [], hasMore: false }
 
     expect(Array.isArray(accounts)).toBe(true)
     expect(threads.totalEstimate).toBe(0)
-    expect(Array.isArray(messages)).toBe(true)
+    expect(Array.isArray(messageList.messages)).toBe(true)
+    expect(messageList.hasMore).toBe(false)
   })
 })
