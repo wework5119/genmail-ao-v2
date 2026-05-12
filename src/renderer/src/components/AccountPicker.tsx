@@ -25,38 +25,47 @@ export default function AccountPicker() {
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-500 w-full text-left"
+        aria-haspopup="listbox"
+        aria-expanded={open}
       >
         <div className="w-5 h-5 rounded-full bg-accent-600 flex items-center justify-center flex-shrink-0">
-          <span className="text-[11px] font-medium text-white leading-none">
-            {selected?.name?.charAt(0) ?? '?'}
+          <span className="text-[10px] font-semibold text-white leading-none">
+            {selected?.name?.charAt(0).toUpperCase() ?? '?'}
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-text-primary truncate leading-normal">
+          <div className="text-sm font-semibold text-text-primary truncate leading-tight">
             {selected?.name ?? 'Select account'}
           </div>
-          <div className="text-2xs text-text-tertiary leading-tight truncate">
+          <div className="text-2xs text-text-tertiary leading-tight truncate mt-px">
             {selected?.email ?? ''}
           </div>
         </div>
         <svg
-          className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-[120ms] ${open ? 'rotate-180' : ''}`}
+          className={`w-3 h-3 text-text-tertiary transition-transform duration-[120ms] flex-shrink-0 ${open ? 'rotate-180' : ''}`}
           viewBox="0 0 16 16"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          aria-hidden="true"
         >
           <path d="M4 6l4 4 4-4" />
         </svg>
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-surface rounded-lg shadow-elevated border border-border py-1 z-50">
+        <div
+          className="absolute top-full left-0 right-0 mt-1 bg-surface rounded-lg shadow-elevated border border-border py-1 z-50"
+          role="listbox"
+          aria-label="Select account"
+        >
           {state.accounts.map((account) => (
             <button
               key={account.id}
+              role="option"
+              aria-selected={account.id === state.selectedAccountId}
               onClick={() => {
                 selectAccount(account.id)
                 setOpen(false)
@@ -68,23 +77,24 @@ export default function AccountPicker() {
               }`}
             >
               <div className="w-6 h-6 rounded-full bg-accent-600 flex items-center justify-center flex-shrink-0">
-                <span className="text-xs font-medium text-white leading-none">
-                  {account.name.charAt(0)}
+                <span className="text-[11px] font-semibold text-white leading-none">
+                  {account.name.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-text-primary truncate leading-normal">
+                <div className="text-sm font-medium text-text-primary truncate leading-tight">
                   {account.name}
                 </div>
-                <div className="text-2xs text-text-tertiary truncate leading-tight">
+                <div className="text-2xs text-text-tertiary truncate leading-tight mt-px">
                   {account.email}
                 </div>
               </div>
               {account.id === state.selectedAccountId && (
                 <svg
-                  className="w-4 h-4 text-accent-600 flex-shrink-0"
+                  className="w-3.5 h-3.5 text-accent-600 flex-shrink-0"
                   viewBox="0 0 16 16"
                   fill="currentColor"
+                  aria-hidden="true"
                 >
                   <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" />
                 </svg>

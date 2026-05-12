@@ -43,25 +43,27 @@ export default function ThreadRow({
       onClick={onSelect}
       onDoubleClick={onDoubleClick}
       aria-selected={selected}
-      className={`w-full text-left px-4 py-[10px] transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-500 focus-visible:outline-offset-[-2px] ${
+      className={`group w-full text-left px-4 py-3 transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-500 focus-visible:outline-offset-[-2px] ${
         selected
           ? 'bg-accent-50'
           : 'hover:bg-neutral-50'
       }`}
     >
-      <div className="flex items-start gap-3">
-        {/* Unread dot — fixed 16px wide gutter so text alignment is consistent */}
-        <div className="flex-shrink-0 w-2 flex justify-center pt-[5px]">
-          {thread.unread && (
-            <div className="w-[7px] h-[7px] rounded-full bg-accent-600" />
+      <div className="flex items-start gap-2.5">
+        {/* Unread dot — 8px gutter, vertically centered to sender line */}
+        <div className="flex-shrink-0 w-2 flex justify-center mt-[7px]">
+          {thread.unread ? (
+            <div className="w-[6px] h-[6px] rounded-full bg-accent-600 flex-shrink-0" />
+          ) : (
+            <div className="w-[6px] h-[6px] rounded-full flex-shrink-0" />
           )}
         </div>
 
         <div className="flex-1 min-w-0">
           {/* Row 1: Sender name + timestamp */}
-          <div className="flex items-baseline justify-between gap-2 mb-[3px]">
+          <div className="flex items-baseline justify-between gap-3 mb-0.5">
             <span
-              className={`truncate text-sm leading-[20px] ${
+              className={`truncate text-sm leading-5 ${
                 thread.unread
                   ? 'font-semibold text-text-primary'
                   : 'font-medium text-text-secondary'
@@ -69,17 +71,21 @@ export default function ThreadRow({
             >
               {thread.from.name}
             </span>
-            <span className="text-2xs text-text-tertiary whitespace-nowrap flex-shrink-0 leading-[20px]">
+            <span
+              className={`text-2xs whitespace-nowrap flex-shrink-0 leading-5 tabular-nums ${
+                thread.unread ? 'text-accent-600 font-medium' : 'text-text-tertiary'
+              }`}
+            >
               {formatRelativeTime(thread.lastMessageAt)}
             </span>
           </div>
 
           {/* Row 2: Subject */}
           <div
-            className={`truncate text-sm leading-[18px] mb-[2px] ${
+            className={`truncate text-sm leading-[18px] mb-0.5 ${
               thread.unread
                 ? 'font-medium text-text-primary'
-                : 'text-text-secondary'
+                : 'font-normal text-text-secondary'
             }`}
           >
             {thread.subject}
@@ -92,9 +98,10 @@ export default function ThreadRow({
             </div>
             {thread.hasAttachments && (
               <svg
-                className="w-3 h-3 text-text-tertiary flex-shrink-0"
+                className="w-3 h-3 text-text-tertiary flex-shrink-0 opacity-60"
                 viewBox="0 0 16 16"
                 fill="currentColor"
+                aria-label="Has attachments"
               >
                 <path d="M8 0a5.5 5.5 0 00-5.5 5.5v6a4 4 0 108 0V6a2.5 2.5 0 00-5 0v5.5a1 1 0 102 0V6a.5.5 0 011 0v5.5a3 3 0 01-6 0V5.5a5.5 5.5 0 1111 0v6h-2V5.5A3.5 3.5 0 008 0z" />
               </svg>

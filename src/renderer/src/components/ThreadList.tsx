@@ -90,8 +90,8 @@ export default function ThreadList() {
     return (
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-5 h-5 border-2 border-neutral-400 border-t-accent-600 rounded-full animate-spin" />
-          <p className="text-sm text-text-tertiary">Loading threads...</p>
+          <div className="w-4 h-4 border-[1.5px] border-neutral-300 border-t-accent-500 rounded-full animate-spin" />
+          <p className="text-xs text-text-tertiary tracking-wide">Loading…</p>
         </div>
       </div>
     )
@@ -99,11 +99,11 @@ export default function ThreadList() {
 
   if (state.error) {
     return (
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="flex flex-col items-center gap-4 max-w-xs text-center">
-          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center px-8 py-12">
+        <div className="flex flex-col items-center gap-3 max-w-[220px] text-center">
+          <div className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center">
             <svg
-              className="w-5 h-5 text-red-600"
+              className="w-4 h-4 text-neutral-400"
               viewBox="0 0 16 16"
               fill="currentColor"
             >
@@ -114,15 +114,17 @@ export default function ThreadList() {
               />
             </svg>
           </div>
-          <p className="text-sm font-medium text-text-primary">
-            Failed to load threads
-          </p>
-          <p className="text-xs text-text-tertiary">{state.error}</p>
+          <div>
+            <p className="text-sm font-medium text-text-primary mb-1">
+              Connection failed
+            </p>
+            <p className="text-xs text-text-tertiary leading-relaxed">{state.error}</p>
+          </div>
           <button
             onClick={retry}
-            className="px-3 py-1.5 text-sm font-medium text-accent-600 hover:bg-accent-50 rounded-md transition-colors duration-[120ms]"
+            className="mt-1 px-3 py-1.5 text-xs font-medium text-accent-600 border border-accent-200 hover:bg-accent-50 rounded-md transition-colors duration-[120ms]"
           >
-            Retry
+            Try again
           </button>
         </div>
       </div>
@@ -131,11 +133,11 @@ export default function ThreadList() {
 
   if (state.threads.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="flex flex-col items-center gap-4 max-w-xs text-center">
-          <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center px-8 py-12">
+        <div className="flex flex-col items-center gap-3 max-w-[220px] text-center">
+          <div className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center">
             <svg
-              className="w-6 h-6 text-neutral-400"
+              className="w-4 h-4 text-neutral-400"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -147,45 +149,45 @@ export default function ThreadList() {
               <polyline points="22,6 12,13 2,6" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-text-primary">
-            No emails yet
-          </p>
-          <p className="text-xs text-text-tertiary leading-relaxed">
-            Your inbox is empty. When you receive emails, they will appear
-            here.
-          </p>
+          <div>
+            <p className="text-sm font-medium text-text-primary mb-1">
+              All caught up
+            </p>
+            <p className="text-xs text-text-tertiary leading-relaxed">
+              No new messages. Press R to refresh.
+            </p>
+          </div>
         </div>
       </div>
     )
   }
 
+  const unreadCount = state.threads.filter((t) => t.unread).length
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Section header */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-border">
-        <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
+        <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest">
           Inbox
         </span>
-        {state.threads.length > 0 && (
-          <span className="text-2xs text-text-tertiary">
-            {state.threads.filter((t) => t.unread).length > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent-600 text-white font-medium text-[10px] leading-none">
-                {state.threads.filter((t) => t.unread).length}
-              </span>
-            )}
+        {unreadCount > 0 && (
+          <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent-600 text-white font-semibold text-[10px] leading-none">
+            {unreadCount}
           </span>
         )}
       </div>
 
       <div
         ref={listRef}
-        className="flex-1 scrollable"
+        className="flex-1 scrollable outline-none"
         tabIndex={0}
         role="listbox"
         aria-label="Thread list"
+        aria-activedescendant={state.selectedThreadId ?? undefined}
       >
         {state.threads.map((thread, index) => (
-          <div key={thread.id} data-thread-id={thread.id}>
+          <div key={thread.id} data-thread-id={thread.id} role="option" aria-selected={thread.id === state.selectedThreadId}>
             <ThreadRow
               thread={thread}
               selected={thread.id === state.selectedThreadId}
@@ -193,14 +195,14 @@ export default function ThreadList() {
               onDoubleClick={() => {}}
             />
             {index < state.threads.length - 1 && (
-              <div className="ml-[44px] mr-0 border-b border-border opacity-60" />
+              <div className="ml-[40px] border-b border-border" />
             )}
           </div>
         ))}
 
         {state.loadingMore && (
-          <div className="flex items-center justify-center py-4">
-            <div className="w-4 h-4 border-2 border-neutral-400 border-t-accent-600 rounded-full animate-spin" />
+          <div className="flex items-center justify-center py-5">
+            <div className="w-3.5 h-3.5 border-[1.5px] border-neutral-300 border-t-accent-500 rounded-full animate-spin" />
           </div>
         )}
 
