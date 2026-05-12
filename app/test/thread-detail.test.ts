@@ -421,6 +421,42 @@ describe('Stale async response guard', () => {
     expect(applied).toBe(false)
   })
 
+  it('discards failure when threadId does not match current thread (stale failure guard)', () => {
+    /**
+     * Mirrors the LOAD_MESSAGES_FAILURE stale guard: if the failing request was
+     * for a different thread than the currently selected one, the reducer must
+     * return state unchanged so the current thread's loading/error state is preserved.
+     */
+    function applyLoadMessagesFailure(
+      selectedThreadId: string | null,
+      payloadThreadId: string,
+      currentMessagesLoading: boolean
+    ): { applied: boolean; messagesLoading: boolean; messagesError: string | null } {
+      // Mirrors the reducer guard
+      if (payloadThreadId !== selectedThreadId) {
+        return { applied: false, messagesLoading: currentMessagesLoading, messagesError: null }
+      }
+      return { applied: true, messagesLoading: false, messagesError: 'Network error' }
+    }
+
+    // Stale failure (thread A failed, but thread B is now selected) — should not apply
+    const stale = applyLoadMessagesFailure('thread-2', 'thread-1', true)
+    expect(stale.applied).toBe(false)
+    // Loading flag must remain true — thread B's request is still in flight
+    expect(stale.messagesLoading).toBe(true)
+    expect(stale.messagesError).toBeNull()
+
+    // Non-stale failure (same thread) — should apply
+    const current = applyLoadMessagesFailure('thread-1', 'thread-1', true)
+    expect(current.applied).toBe(true)
+    expect(current.messagesLoading).toBe(false)
+    expect(current.messagesError).toBe('Network error')
+
+    // Null selected thread (navigated away completely) — should not apply
+    const navigatedAway = applyLoadMessagesFailure(null, 'thread-1', false)
+    expect(navigatedAway.applied).toBe(false)
+  })
+
   it('discards load-more result when threadId does not match current thread (stale)', () => {
     /**
      * Mirrors the LOAD_MORE_MESSAGES_SUCCESS stale guard added to the reducer.

@@ -370,7 +370,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to load messages'
-      dispatch({ type: 'LOAD_MESSAGES_FAILURE', payload: message })
+      dispatch({ type: 'LOAD_MESSAGES_FAILURE', payload: { message, threadId } })
     }
   }, [state.selectedAccountId, state.selectedThreadId])
 
@@ -397,7 +397,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to load more messages'
-      dispatch({ type: 'LOAD_MESSAGES_FAILURE', payload: message })
+      dispatch({ type: 'LOAD_MESSAGES_FAILURE', payload: { message, threadId } })
     }
   }, [
     state.selectedAccountId,
