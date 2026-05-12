@@ -16,14 +16,18 @@ export default function ThreadDetailView() {
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const topSentinelRef = useRef<HTMLDivElement>(null)
-  const hasLoaded = useRef(false)
+  const loadedForThreadId = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!hasLoaded.current) {
-      hasLoaded.current = true
+    // Load messages when component mounts or when selectedThreadId changes to a new thread
+    if (
+      state.selectedThreadId &&
+      loadedForThreadId.current !== state.selectedThreadId
+    ) {
+      loadedForThreadId.current = state.selectedThreadId
       loadMessages()
     }
-  }, [loadMessages])
+  }, [loadMessages, state.selectedThreadId])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -79,7 +83,8 @@ export default function ThreadDetailView() {
             <button
               onClick={handleBack}
               className="p-1.5 -ml-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] focus-visible:outline-2 focus-visible:outline-accent-500"
-              aria-label="Back to inbox"
+              aria-label="Back to inbox (Escape)"
+              title="Back to inbox (Esc)"
             >
               <svg
                 className="w-4 h-4 text-text-secondary"
@@ -103,31 +108,34 @@ export default function ThreadDetailView() {
 
   if (state.messagesError && state.messages.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="flex flex-col items-center gap-4 max-w-xs text-center">
-          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
-            <svg
-              className="w-5 h-5 text-red-500"
-              viewBox="0 0 16 16"
-              fill="currentColor"
+      <div className="flex-1 flex flex-col">
+        <HeaderBar subject={selectedThread?.subject} onBack={handleBack} />
+        <div className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="flex flex-col items-center gap-4 max-w-xs text-center">
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+              <svg
+                className="w-5 h-5 text-red-500"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 5a.75.75 0 011.5 0v3a.75.75 0 01-1.5 0V5zm.75 6.25a.75.75 0 100-1.5.75.75 0 000 1.5z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-text-primary">
+              Failed to load messages
+            </p>
+            <p className="text-xs text-text-tertiary">{state.messagesError}</p>
+            <button
+              onClick={retryMessages}
+              className="px-3 py-1.5 text-sm font-medium text-accent-blue hover:bg-accent-blueLight rounded-md transition-colors duration-[120ms]"
             >
-              <path
-                fillRule="evenodd"
-                d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 5a.75.75 0 011.5 0v3a.75.75 0 01-1.5 0V5zm.75 6.25a.75.75 0 100-1.5.75.75 0 000 1.5z"
-                clipRule="evenodd"
-              />
-            </svg>
+              Retry
+            </button>
           </div>
-          <p className="text-sm font-medium text-text-primary">
-            Failed to load messages
-          </p>
-          <p className="text-xs text-text-tertiary">{state.messagesError}</p>
-          <button
-            onClick={retryMessages}
-            className="px-3 py-1.5 text-sm font-medium text-accent-blue hover:bg-accent-blueLight rounded-md transition-colors duration-[120ms]"
-          >
-            Retry
-          </button>
         </div>
       </div>
     )
@@ -188,19 +196,8 @@ export default function ThreadDetailView() {
           </div>
         )}
 
-        <div className="divide-y divide-border">
-          {state.messages.map((message) => (
-            <div key={message.id} className="px-6 py-4">
-              <div className="mb-2">
-                <MessageHeader message={message} />
-              </div>
-              <MessageBody message={message} />
-            </div>
-          ))}
-        </div>
-
-        {state.messagesHasMore && !state.messagesLoadingMore && (
-          <div className="flex items-center justify-center py-4">
+        {!state.messagesLoadingMore && state.messagesHasMore && (
+          <div className="flex items-center justify-center py-3 border-b border-border">
             <button
               onClick={loadMoreMessages}
               className="px-3 py-1.5 text-xs font-medium text-accent-blue hover:bg-accent-blueLight rounded-md transition-colors duration-[120ms]"
@@ -209,6 +206,19 @@ export default function ThreadDetailView() {
             </button>
           </div>
         )}
+
+        <div className="divide-y divide-border">
+          {state.messages.map((message) => (
+            <article key={message.id} className="px-6 py-5">
+              <div className="mb-3">
+                <MessageHeader message={message} />
+              </div>
+              <div className="ml-11">
+                <MessageBody message={message} />
+              </div>
+            </article>
+          ))}
+        </div>
 
         <div className="h-8" />
       </div>
@@ -230,6 +240,7 @@ function HeaderBar({
           onClick={onBack}
           className="p-1.5 -ml-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] focus-visible:outline-2 focus-visible:outline-accent-500"
           aria-label="Back to inbox"
+          title="Back to inbox (Esc)"
         >
           <svg
             className="w-4 h-4 text-text-secondary"

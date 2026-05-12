@@ -132,24 +132,33 @@ function inboxReducer(state: InboxState, action: InboxAction): InboxState {
       return { ...state, view: action.payload }
     case 'LOAD_MESSAGES_START':
       return { ...state, messagesLoading: true, messagesError: null }
-    case 'LOAD_MESSAGES_SUCCESS':
+    case 'LOAD_MESSAGES_SUCCESS': {
+      const sorted = [...action.payload.messages].sort(
+        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+      )
       return {
         ...state,
         messagesLoading: false,
-        messages: action.payload.messages,
+        messages: sorted,
         messagesNextToken: action.payload.nextPageToken,
         messagesHasMore: action.payload.hasMore
       }
+    }
     case 'LOAD_MORE_MESSAGES_START':
       return { ...state, messagesLoadingMore: true }
-    case 'LOAD_MORE_MESSAGES_SUCCESS':
+    case 'LOAD_MORE_MESSAGES_SUCCESS': {
+      // Older messages are prepended; re-sort to maintain chronological order
+      const combined = [...action.payload.messages, ...state.messages].sort(
+        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+      )
       return {
         ...state,
         messagesLoadingMore: false,
-        messages: [...action.payload.messages, ...state.messages],
+        messages: combined,
         messagesNextToken: action.payload.nextPageToken,
         messagesHasMore: action.payload.hasMore
       }
+    }
     case 'LOAD_MESSAGES_FAILURE':
       return {
         ...state,
@@ -317,6 +326,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
 
   const navigateToThread = useCallback(
     (threadId: string) => {
+      dispatch({ type: 'CLEAR_MESSAGES' })
       dispatch({ type: 'SELECT_THREAD', payload: threadId })
       dispatch({ type: 'NAVIGATE', payload: 'thread' })
     },
