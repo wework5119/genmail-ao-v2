@@ -60,7 +60,10 @@ function sanitizeHtml(html: string): string {
 function replaceImageSources(html: string, showImages: boolean): string {
   if (!showImages) {
     return html.replace(/<img[^>]+>/gi, (match) => {
-      return match.replace(/src=["'][^"']*["']/gi, '')
+      // Strip both src and srcset — browsers load images from srcset even without src
+      return match
+        .replace(/src=["'][^"']*["']/gi, '')
+        .replace(/srcset=["'][^"']*["']/gi, '')
     })
   }
   return html
@@ -152,9 +155,10 @@ export default function MessageBody({ message }: MessageBodyProps) {
 
   // Check sanitizedHtml (not raw body) so that data: URI images already stripped
   // by the sanitizer don't produce a spurious "Show images" banner.
+  // Also check srcset — browsers load images from srcset even without src.
   const hasImages = useMemo(() => {
     if (message.bodyType !== 'html') return false
-    return /<img[^>]+src=["']/i.test(sanitizedHtml)
+    return /<img[^>]+src=["']/i.test(sanitizedHtml) || /<img[^>]+srcset=["']/i.test(sanitizedHtml)
   }, [sanitizedHtml, message.bodyType])
 
   const { mainHtml, quotedHtml } = useMemo(() => {

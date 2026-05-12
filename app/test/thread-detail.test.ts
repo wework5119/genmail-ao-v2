@@ -510,3 +510,109 @@ describe('HTML sanitization — attribute policy', () => {
     expect(shouldStripAttr('src', 'https://example.com/image.png')).toBe(false)
   })
 })
+
+// ─── Image blocking — srcset stripping logic ─────────────────────────────────
+
+describe('Image blocking — srcset attribute', () => {
+  /**
+   * Mirrors the replaceImageSources and hasImages logic from MessageBody.tsx.
+   * Uses string regex operations (no DOMParser required for Node environment).
+   */
+  function stripImageResources(html: string): string {
+    return html.replace(/<img[^>]+>/gi, (match) => {
+      return match
+        .replace(/src=["'][^"']*["']/gi, '')
+        .replace(/srcset=["'][^"']*["']/gi, '')
+    })
+  }
+
+  function hasExternalImages(sanitizedHtml: string): boolean {
+    return (
+      /<img[^>]+src=["']/i.test(sanitizedHtml) ||
+      /<img[^>]+srcset=["']/i.test(sanitizedHtml)
+    )
+  }
+
+  it('strips srcset attribute when images are blocked', () => {
+    const html = '<img srcset="https://example.com/img.png 2x" alt="test">'
+    const result = stripImageResources(html)
+    expect(result).not.toContain('srcset=')
+    expect(result).toContain('alt="test"')
+  })
+
+  it('strips both src and srcset when images are blocked', () => {
+    const html = '<img src="https://example.com/img.png" srcset="https://example.com/img@2x.png 2x" alt="hi">'
+    const result = stripImageResources(html)
+    expect(result).not.toContain('src=')
+    expect(result).not.toContain('srcset=')
+  })
+
+  it('detects srcset-only images for Show images banner', () => {
+    const html = '<p>Hello</p><img srcset="https://tracker.com/pixel.png 1x" alt="">'
+    expect(hasExternalImages(html)).toBe(true)
+  })
+
+  it('detects src images for Show images banner', () => {
+    const html = '<p>Hello</p><img src="https://example.com/img.png">'
+    expect(hasExternalImages(html)).toBe(true)
+  })
+
+  it('returns false when no img with src or srcset', () => {
+    const html = '<p>Hello</p><img alt="decorative">'
+    expect(hasExternalImages(html)).toBe(false)
+  })
+})
+
+// ─── Load-more deduplication logic ───────────────────────────────────────────
+
+describe('Load-more message deduplication', () => {
+  /**
+   * Mirrors the LOAD_MORE_MESSAGES_SUCCESS reducer deduplication logic.
+   */
+  function mergeAndDedup(older: Message[], existing: Message[]): Message[] {
+    const seenIds = new Set<string>()
+    return [...older, ...existing]
+      .filter((m) => {
+        if (seenIds.has(m.id)) return false
+        seenIds.add(m.id)
+        return true
+      })
+      .sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime())
+  }
+
+  it('removes duplicate messages by ID when pages overlap', () => {
+    const existing: Message[] = [
+      makeMessage({ id: 'msg-2', sentAt: '2024-03-01T10:00:00Z' }),
+      makeMessage({ id: 'msg-3', sentAt: '2024-03-01T12:00:00Z' })
+    ]
+    const older: Message[] = [
+      makeMessage({ id: 'msg-1', sentAt: '2024-03-01T08:00:00Z' }),
+      makeMessage({ id: 'msg-2', sentAt: '2024-03-01T10:00:00Z' }) // duplicate
+    ]
+    const result = mergeAndDedup(older, existing)
+    expect(result).toHaveLength(3)
+    const ids = result.map((m) => m.id)
+    expect(ids).toEqual(['msg-1', 'msg-2', 'msg-3'])
+  })
+
+  it('preserves all unique messages when there are no overlaps', () => {
+    const existing: Message[] = [makeMessage({ id: 'msg-3', sentAt: '2024-03-01T12:00:00Z' })]
+    const older: Message[] = [makeMessage({ id: 'msg-1', sentAt: '2024-03-01T08:00:00Z' })]
+    const result = mergeAndDedup(older, existing)
+    expect(result).toHaveLength(2)
+  })
+
+  it('deduplicates when same page token fires twice', () => {
+    const existing: Message[] = [
+      makeMessage({ id: 'msg-1', sentAt: '2024-03-01T08:00:00Z' }),
+      makeMessage({ id: 'msg-2', sentAt: '2024-03-01T10:00:00Z' })
+    ]
+    // Both calls return same page
+    const secondPage: Message[] = [
+      makeMessage({ id: 'msg-1', sentAt: '2024-03-01T08:00:00Z' }),
+      makeMessage({ id: 'msg-2', sentAt: '2024-03-01T10:00:00Z' })
+    ]
+    const result = mergeAndDedup(secondPage, existing)
+    expect(result).toHaveLength(2)
+  })
+})

@@ -163,10 +163,17 @@ function inboxReducer(state: InboxState, action: InboxAction): InboxState {
       if (action.payload.threadId !== state.selectedThreadId) {
         return { ...state, messagesLoadingMore: false }
       }
-      // Older messages are prepended; re-sort to maintain chronological order
-      const combined = [...action.payload.messages, ...state.messages].sort(
-        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-      )
+      // Older messages are prepended; deduplicate by ID then re-sort chronologically.
+      // Deduplication guards against overlapping pages from cursor-based pagination
+      // or a double-fire of loadMoreMessages with the same page token.
+      const seenIds = new Set<string>()
+      const combined = [...action.payload.messages, ...state.messages]
+        .filter((m) => {
+          if (seenIds.has(m.id)) return false
+          seenIds.add(m.id)
+          return true
+        })
+        .sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime())
       return {
         ...state,
         messagesLoadingMore: false,
