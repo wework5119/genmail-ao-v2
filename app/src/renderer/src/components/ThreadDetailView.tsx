@@ -21,7 +21,9 @@ export default function ThreadDetailView() {
   const loadedForThreadId = useRef<string | null>(null)
   // Container ref: focused on mount so Escape / keyboard events work immediately
   const containerRef = useRef<HTMLDivElement>(null)
-  // Scroll anchor: preserve scroll offset when prepending older messages
+  // Scroll anchor: preserve scroll offset when prepending older messages.
+  // Captured synchronously before the load-more dispatch so the spinner element
+  // is not yet in the DOM (and therefore not included in the baseline height).
   const prevScrollHeightRef = useRef<number>(0)
 
   useEffect(() => {
@@ -41,14 +43,8 @@ export default function ThreadDetailView() {
     containerRef.current?.focus({ preventScroll: true })
   }, [])
 
-  // Scroll anchor: capture scroll height before loading more messages so we can
-  // restore the relative position after older messages are prepended to the list.
-  useEffect(() => {
-    if (state.messagesLoadingMore && scrollContainerRef.current) {
-      prevScrollHeightRef.current = scrollContainerRef.current.scrollHeight
-    }
-  }, [state.messagesLoadingMore])
-
+  // Scroll anchor: after load-more completes, compute how much the content grew
+  // and shift scrollTop by that delta to keep the previously-visible content in place.
   useEffect(() => {
     if (!state.messagesLoadingMore && prevScrollHeightRef.current > 0 && scrollContainerRef.current) {
       const newScrollHeight = scrollContainerRef.current.scrollHeight
@@ -59,6 +55,15 @@ export default function ThreadDetailView() {
       prevScrollHeightRef.current = 0
     }
   }, [state.messagesLoadingMore])
+
+  // Wrap loadMoreMessages to capture scrollHeight *before* the dispatch so that
+  // the spinner element is not yet in the DOM and is excluded from the baseline.
+  const handleLoadMore = useCallback(() => {
+    if (scrollContainerRef.current) {
+      prevScrollHeightRef.current = scrollContainerRef.current.scrollHeight
+    }
+    loadMoreMessages()
+  }, [loadMoreMessages])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -93,7 +98,7 @@ export default function ThreadDetailView() {
           state.messagesHasMore &&
           !state.messagesLoadingMore
         ) {
-          loadMoreMessages()
+          handleLoadMore()
         }
       },
       { root: scrollContainer, rootMargin: '80px 0px 0px 0px', threshold: 0 }
@@ -101,7 +106,7 @@ export default function ThreadDetailView() {
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [state.messagesHasMore, state.messagesLoadingMore, loadMoreMessages, state.messages.length])
+  }, [state.messagesHasMore, state.messagesLoadingMore, handleLoadMore, state.messages.length])
 
   const selectedThread = state.threads.find(
     (t) => t.id === state.selectedThreadId
@@ -240,7 +245,7 @@ export default function ThreadDetailView() {
         {!state.messagesLoadingMore && state.messagesHasMore && (
           <div className="flex items-center justify-center py-3">
             <button
-              onClick={loadMoreMessages}
+              onClick={handleLoadMore}
               className="px-3 py-1.5 text-xs font-medium text-text-secondary bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors duration-[120ms]"
             >
               Load earlier messages
