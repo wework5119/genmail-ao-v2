@@ -19,5 +19,5 @@ export function invoke<C extends IpcChannel>(
   channel: C,
   ...args: IpcRequest<C> extends void ? [] : [IpcRequest<C>]
 ): Promise<IpcResponse<C>> {
-  return window.api.invoke(channel, ...(args as never[]))
+  return window.api.invoke(channel, ...(args as IpcRequest<C> extends void ? [] : [IpcRequest<C>]))
 }

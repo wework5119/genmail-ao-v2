@@ -59,7 +59,7 @@ export default function ThreadRow({
               {thread.from.name}
             </span>
             <span className="text-2xs text-text-tertiary whitespace-nowrap flex-shrink-0">
-              {formatRelativeTime(thread.lastMessageAt)}
+              {formatRelativeTime(thread.lastMessageDate)}
             </span>
           </div>
 
