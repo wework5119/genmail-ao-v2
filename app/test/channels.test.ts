@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { IPC_CHANNELS } from '../src/ipc/channels'
-import type { IpcChannel, IpcChannelMap, IpcRequest, IpcResponse, Account, ThreadList, Message, PageParams } from '../src/ipc/channels'
+import type { IpcChannel, IpcChannelMap, IpcRequest, IpcResponse, Account, ThreadList, Message, PageParams, SendMessageRequest, AiDraftRequest } from '../src/ipc/channels'
 
 describe('IPC channel registry', () => {
   it('defines all required channel constants', () => {
     expect(IPC_CHANNELS.GET_ACCOUNTS).toBe('getAccounts')
     expect(IPC_CHANNELS.LIST_THREADS).toBe('listThreads')
     expect(IPC_CHANNELS.GET_MESSAGES).toBe('getMessages')
+    expect(IPC_CHANNELS.SEND_MESSAGE).toBe('sendMessage')
+    expect(IPC_CHANNELS.AI_DRAFT).toBe('aiDraft')
   })
 
   it('channel names are unique', () => {
@@ -91,7 +93,7 @@ describe('IPC channel type map', () => {
 })
 
 describe('IPC channel map compiles correctly', () => {
-  it('IpcChannelMap contains all three channels', () => {
+  it('IpcChannelMap contains all five channels', () => {
     const map: IpcChannelMap = {} as IpcChannelMap
     expect(map).toBeDefined()
   })
@@ -123,5 +125,92 @@ describe('IPC channel map compiles correctly', () => {
     expect(Array.isArray(accounts)).toBe(true)
     expect(threads.totalEstimate).toBe(0)
     expect(Array.isArray(messages)).toBe(true)
+  })
+})
+
+describe('IPC channel types — sendMessage + aiDraft (issue #9)', () => {
+  it('SendMessageRequest has required fields', () => {
+    const req: SendMessageRequest = {
+      accountId: 'acc-1',
+      to: [{ address: 'alice@example.com' }],
+      subject: 'Hello',
+      body: 'World',
+    }
+    expect(req.accountId).toBe('acc-1')
+    expect(req.to[0].address).toBe('alice@example.com')
+  })
+
+  it('SendMessageRequest supports optional cc and replyToThreadId', () => {
+    const req: SendMessageRequest = {
+      accountId: 'acc-1',
+      to: [{ address: 'alice@example.com' }],
+      cc: [{ address: 'bob@example.com', name: 'Bob' }],
+      subject: 'Test',
+      body: 'Body',
+      replyToThreadId: 'thread-123',
+      replyToMessageId: 'msg-456',
+    }
+    expect(req.cc).toHaveLength(1)
+    expect(req.replyToThreadId).toBe('thread-123')
+  })
+
+  it('AiDraftRequest has required fields', () => {
+    const req: AiDraftRequest = {
+      accountId: 'acc-1',
+      to: [{ address: 'alice@example.com' }],
+      subject: 'Help me draft this',
+      mode: 'compose',
+    }
+    expect(req.mode).toBe('compose')
+  })
+
+  it('AiDraftRequest supports reply mode with context', () => {
+    const req: AiDraftRequest = {
+      accountId: 'acc-1',
+      to: [{ address: 'alice@example.com' }],
+      subject: 'Re: Original',
+      mode: 'reply',
+      context: 'Original message content here',
+    }
+    expect(req.mode).toBe('reply')
+    expect(req.context).toBe('Original message content here')
+  })
+
+  it('IpcRequest for sendMessage matches SendMessageRequest', () => {
+    type Req = IpcRequest<'sendMessage'>
+    const req: Req = {
+      accountId: 'acc-1',
+      to: [{ address: 'test@example.com' }],
+      subject: 'Subject',
+      body: 'Body',
+    }
+    expect(req.accountId).toBe('acc-1')
+  })
+
+  it('IpcResponse for sendMessage has messageId, threadId, sentAt', () => {
+    type Res = IpcResponse<'sendMessage'>
+    const res: Res = {
+      messageId: 'msg-1',
+      threadId: 'thread-1',
+      sentAt: '2026-05-12T10:00:00Z',
+    }
+    expect(res.messageId).toBe('msg-1')
+  })
+
+  it('IpcRequest for aiDraft matches AiDraftRequest', () => {
+    type Req = IpcRequest<'aiDraft'>
+    const req: Req = {
+      accountId: 'acc-1',
+      to: [],
+      subject: 'Draft me something',
+      mode: 'compose',
+    }
+    expect(req.mode).toBe('compose')
+  })
+
+  it('IpcResponse for aiDraft has draft field', () => {
+    type Res = IpcResponse<'aiDraft'>
+    const res: Res = { draft: 'Dear Alice,\n\nThank you.' }
+    expect(res.draft).toContain('Dear Alice')
   })
 })

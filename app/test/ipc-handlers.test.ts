@@ -36,9 +36,9 @@ describe('IPC handler registration', () => {
     expect(() => registerIpcHandlers()).not.toThrow()
   })
 
-  it('calls ipcMain.handle exactly three times', () => {
+  it('calls ipcMain.handle exactly five times (three original + sendMessage + aiDraft)', () => {
     registerIpcHandlers()
-    expect(ipcMain.handle).toHaveBeenCalledTimes(3)
+    expect(ipcMain.handle).toHaveBeenCalledTimes(5)
   })
 
   it('registers getAccounts handler', () => {
@@ -65,9 +65,25 @@ describe('IPC handler registration', () => {
     )
   })
 
+  it('registers sendMessage handler', () => {
+    registerIpcHandlers()
+    expect(ipcMain.handle).toHaveBeenCalledWith(
+      'sendMessage',
+      expect.any(Function)
+    )
+  })
+
+  it('registers aiDraft handler', () => {
+    registerIpcHandlers()
+    expect(ipcMain.handle).toHaveBeenCalledWith(
+      'aiDraft',
+      expect.any(Function)
+    )
+  })
+
   it('registration is idempotent (multiple calls do not throw)', () => {
     registerIpcHandlers()
     registerIpcHandlers()
-    expect(ipcMain.handle).toHaveBeenCalledTimes(6)
+    expect(ipcMain.handle).toHaveBeenCalledTimes(10)
   })
 })
