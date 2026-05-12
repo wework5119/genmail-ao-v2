@@ -159,4 +159,36 @@ describe('inboxReducer', () => {
     expect(state.nextCursor).toBeUndefined()
     expect(state.hasMore).toBe(false)
   })
+
+  it('REFRESH → LOAD_THREADS_START → LOAD_THREADS_SUCCESS restores threads (R-key flow)', () => {
+    // This covers the previously broken R-key refresh path where REFRESH
+    // cleared threads but the fetch never re-ran, leaving a permanent empty state.
+    const withThreads: InboxState = {
+      ...initialState,
+      selectedAccountId: '1',
+      threads: [mockThread('t1'), mockThread('t2')],
+      selectedThreadId: 't1'
+    }
+    // Step 1: REFRESH clears state
+    const afterRefresh = inboxReducer(withThreads, { type: 'REFRESH' })
+    expect(afterRefresh.threads).toHaveLength(0)
+    expect(afterRefresh.loading).toBe(false)
+
+    // Step 2: fetchThreads dispatches LOAD_THREADS_START
+    const afterStart = inboxReducer(afterRefresh, { type: 'LOAD_THREADS_START' })
+    expect(afterStart.loading).toBe(true)
+
+    // Step 3: IPC resolves → LOAD_THREADS_SUCCESS restores threads
+    const refreshResult: ListThreadsResult = {
+      threads: [mockThread('t1'), mockThread('t2'), mockThread('t3')],
+      hasMore: false
+    }
+    const afterSuccess = inboxReducer(afterStart, {
+      type: 'LOAD_THREADS_SUCCESS',
+      payload: refreshResult
+    })
+    expect(afterSuccess.loading).toBe(false)
+    expect(afterSuccess.threads).toHaveLength(3)
+    expect(afterSuccess.selectedThreadId).toBe('t1')
+  })
 })
