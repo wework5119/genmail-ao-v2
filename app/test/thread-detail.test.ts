@@ -254,9 +254,13 @@ describe('Thread date range computation', () => {
   })
 })
 
-// ─── Relative timestamp formatting ──────────────────────────────────────────
+// ─── Relative timestamp formatting (shared lib/time.ts logic) ──────────────
 
 describe('Relative timestamp formatting', () => {
+  /**
+   * Local replica of the shared formatRelativeTime logic for unit-testing
+   * without importing the renderer module.
+   */
   function formatRelativeTime(iso: string, nowMs: number): string {
     const then = new Date(iso).getTime()
     const diff = nowMs - then
@@ -269,9 +273,13 @@ describe('Relative timestamp formatting', () => {
     if (hours < 24) return `${hours}h ago`
     if (days < 7) return `${days}d ago`
 
+    // ≥ 7 days: short date (e.g. "Feb 27") or with year if different
     const date = new Date(iso)
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    return weekdays[date.getDay()]
+    const currentYear = new Date(nowMs).getFullYear()
+    if (date.getFullYear() === currentYear) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
   const now = new Date('2024-03-05T12:00:00Z').getTime()
@@ -296,10 +304,18 @@ describe('Relative timestamp formatting', () => {
     expect(formatRelativeTime(iso, now)).toBe('2d ago')
   })
 
-  it('returns weekday name for messages older than a week', () => {
-    const iso = '2024-02-27T12:00:00Z' // Tuesday
+  it('returns short date (e.g. "Feb 27") for messages older than a week (same year)', () => {
+    const iso = '2024-02-27T12:00:00Z'
     const result = formatRelativeTime(iso, now)
-    expect(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']).toContain(result)
+    // Should be a short month+day, not a weekday abbreviation
+    expect(result).toMatch(/^[A-Z][a-z]+ \d+$/)
+    expect(result).not.toMatch(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)$/)
+  })
+
+  it('returns date with year for messages from a prior year', () => {
+    const iso = '2023-02-27T12:00:00Z'
+    const result = formatRelativeTime(iso, now)
+    expect(result).toContain('2023')
   })
 })
 

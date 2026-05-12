@@ -13,7 +13,15 @@ function sanitizeHtml(html: string): string {
     const attrs = el.attributes
     for (let i = attrs.length - 1; i >= 0; i--) {
       const name = attrs[i].name.toLowerCase()
-      if (name.startsWith('on') || name === 'javascript' || name === 'vbscript') {
+      const value = attrs[i].value.toLowerCase().trimStart()
+      // Remove event-handler attributes (onclick, onload, etc.)
+      if (name.startsWith('on')) {
+        el.removeAttribute(attrs[i].name)
+        continue
+      }
+      // Remove attributes whose value contains a javascript:/vbscript: URI
+      // (covers href="javascript:alert(1)", src="javascript:...", etc.)
+      if (value.startsWith('javascript:') || value.startsWith('vbscript:')) {
         el.removeAttribute(attrs[i].name)
       }
     }
