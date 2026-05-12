@@ -8,6 +8,23 @@ export default function ThreadList() {
   const listRef = useRef<HTMLDivElement>(null)
   const observerRef = useRef<HTMLDivElement>(null)
 
+  // Global R shortcut — fires regardless of which element has focus,
+  // so refresh works even when the list is in empty/loading/error state
+  // (those states don't render listRef, so a local listener would never fire).
+  const handleGlobalKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey) {
+        // Don't hijack R inside text inputs
+        const tag = (e.target as HTMLElement)?.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return
+        e.preventDefault()
+        refresh()
+      }
+    },
+    [refresh]
+  )
+
+  // Local arrow/enter navigation — only meaningful when listbox is focused
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
@@ -18,15 +35,15 @@ export default function ThreadList() {
         moveSelection('up')
       } else if (e.key === 'Enter' && state.selectedThreadId) {
         e.preventDefault()
-      } else if (e.key === 'r' || e.key === 'R') {
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault()
-          refresh()
-        }
       }
     },
-    [moveSelection, state.selectedThreadId, refresh]
+    [moveSelection, state.selectedThreadId]
   )
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleGlobalKeyDown)
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [handleGlobalKeyDown])
 
   useEffect(() => {
     const el = listRef.current
@@ -52,6 +69,13 @@ export default function ThreadList() {
     observer.observe(el)
     return () => observer.disconnect()
   }, [state.hasMore, state.loadingMore, loadMore])
+
+  // Auto-focus the listbox after threads first load so arrow keys work immediately
+  useEffect(() => {
+    if (!state.loading && state.threads.length > 0 && listRef.current) {
+      listRef.current.focus({ preventScroll: true })
+    }
+  }, [state.loading, state.threads.length])
 
   useEffect(() => {
     if (state.selectedThreadId && listRef.current) {
@@ -176,7 +200,7 @@ export default function ThreadList() {
 
         {state.loadingMore && (
           <div className="flex items-center justify-center py-4">
-            <div className="w-4 h-4 border-2 border-neutral-200 border-t-accent-500 rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-neutral-400 border-t-accent-600 rounded-full animate-spin" />
           </div>
         )}
 

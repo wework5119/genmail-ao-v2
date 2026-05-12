@@ -1,105 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { inboxReducer, initialState } from './inboxReducer'
+import type { InboxState } from './inboxReducer'
 import type { Account, Thread, ListThreadsResult } from '../types'
-
-interface InboxState {
-  accounts: Account[]
-  selectedAccountId: string | null
-  threads: Thread[]
-  selectedThreadId: string | null
-  loading: boolean
-  loadingMore: boolean
-  error: string | null
-  nextCursor: string | undefined
-  hasMore: boolean
-}
-
-type InboxAction =
-  | { type: 'SET_ACCOUNTS'; payload: Account[] }
-  | { type: 'SELECT_ACCOUNT'; payload: string }
-  | { type: 'LOAD_THREADS_START' }
-  | { type: 'LOAD_THREADS_SUCCESS'; payload: ListThreadsResult }
-  | { type: 'LOAD_MORE_START' }
-  | { type: 'LOAD_MORE_SUCCESS'; payload: ListThreadsResult }
-  | { type: 'LOAD_FAILURE'; payload: string }
-  | { type: 'SELECT_THREAD'; payload: string }
-  | { type: 'MOVE_SELECTION'; payload: 'up' | 'down' }
-  | { type: 'REFRESH' }
-
-function inboxReducer(state: InboxState, action: InboxAction): InboxState {
-  switch (action.type) {
-    case 'SET_ACCOUNTS':
-      return { ...state, accounts: action.payload }
-    case 'SELECT_ACCOUNT':
-      return {
-        ...state,
-        selectedAccountId: action.payload,
-        threads: [],
-        selectedThreadId: null,
-        nextCursor: undefined,
-        hasMore: false,
-        error: null
-      }
-    case 'LOAD_THREADS_START':
-      return { ...state, loading: true, error: null }
-    case 'LOAD_THREADS_SUCCESS':
-      return {
-        ...state,
-        loading: false,
-        threads: action.payload.threads,
-        nextCursor: action.payload.nextCursor,
-        hasMore: action.payload.hasMore,
-        selectedThreadId:
-          action.payload.threads.length > 0
-            ? action.payload.threads[0].id
-            : null
-      }
-    case 'LOAD_MORE_START':
-      return { ...state, loadingMore: true }
-    case 'LOAD_MORE_SUCCESS':
-      return {
-        ...state,
-        loadingMore: false,
-        threads: [...state.threads, ...action.payload.threads],
-        nextCursor: action.payload.nextCursor,
-        hasMore: action.payload.hasMore
-      }
-    case 'LOAD_FAILURE':
-      return {
-        ...state,
-        loading: false,
-        loadingMore: false,
-        error: action.payload
-      }
-    case 'SELECT_THREAD':
-      return { ...state, selectedThreadId: action.payload }
-    case 'MOVE_SELECTION': {
-      const currentIndex = state.threads.findIndex(
-        (t) => t.id === state.selectedThreadId
-      )
-      let newIndex: number
-      if (action.payload === 'down') {
-        newIndex = Math.min(currentIndex + 1, state.threads.length - 1)
-      } else {
-        newIndex = Math.max(currentIndex - 1, 0)
-      }
-      return {
-        ...state,
-        selectedThreadId: state.threads[newIndex]?.id ?? null
-      }
-    }
-    case 'REFRESH':
-      return {
-        ...state,
-        threads: [],
-        selectedThreadId: null,
-        nextCursor: undefined,
-        hasMore: false,
-        error: null
-      }
-    default:
-      return state
-  }
-}
 
 const mockAccount: Account = {
   id: '1',
@@ -121,18 +23,6 @@ const mockThread = (id: string, overrides?: Partial<Thread>): Thread => ({
   ...overrides
 })
 
-const initialState: InboxState = {
-  accounts: [],
-  selectedAccountId: null,
-  threads: [],
-  selectedThreadId: null,
-  loading: false,
-  loadingMore: false,
-  error: null,
-  nextCursor: undefined,
-  hasMore: false
-}
-
 describe('inboxReducer', () => {
   it('handles SET_ACCOUNTS', () => {
     const state = inboxReducer(initialState, {
@@ -144,7 +34,7 @@ describe('inboxReducer', () => {
   })
 
   it('handles SELECT_ACCOUNT and clears threads', () => {
-    const prev = {
+    const prev: InboxState = {
       ...initialState,
       threads: [mockThread('t1')],
       selectedThreadId: 't1',
@@ -183,7 +73,7 @@ describe('inboxReducer', () => {
   })
 
   it('handles LOAD_MORE_SUCCESS and appends threads', () => {
-    const prev = {
+    const prev: InboxState = {
       ...initialState,
       threads: [mockThread('t1')]
     }
@@ -217,7 +107,7 @@ describe('inboxReducer', () => {
   })
 
   it('handles MOVE_SELECTION down', () => {
-    const prev = {
+    const prev: InboxState = {
       ...initialState,
       threads: [mockThread('t1'), mockThread('t2'), mockThread('t3')],
       selectedThreadId: 't1'
@@ -230,7 +120,7 @@ describe('inboxReducer', () => {
   })
 
   it('handles MOVE_SELECTION up', () => {
-    const prev = {
+    const prev: InboxState = {
       ...initialState,
       threads: [mockThread('t1'), mockThread('t2'), mockThread('t3')],
       selectedThreadId: 't2'
@@ -243,7 +133,7 @@ describe('inboxReducer', () => {
   })
 
   it('does not move selection below first item', () => {
-    const prev = {
+    const prev: InboxState = {
       ...initialState,
       threads: [mockThread('t1'), mockThread('t2')],
       selectedThreadId: 't1'
@@ -256,7 +146,7 @@ describe('inboxReducer', () => {
   })
 
   it('handles REFRESH', () => {
-    const prev = {
+    const prev: InboxState = {
       ...initialState,
       threads: [mockThread('t1')],
       selectedThreadId: 't1',
