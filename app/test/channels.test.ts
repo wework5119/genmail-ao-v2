@@ -7,6 +7,7 @@ describe('IPC channel registry', () => {
     expect(IPC_CHANNELS.GET_ACCOUNTS).toBe('getAccounts')
     expect(IPC_CHANNELS.LIST_THREADS).toBe('listThreads')
     expect(IPC_CHANNELS.GET_MESSAGES).toBe('getMessages')
+    expect(IPC_CHANNELS.SEARCH_THREADS).toBe('searchThreads')
   })
 
   it('channel names are unique', () => {

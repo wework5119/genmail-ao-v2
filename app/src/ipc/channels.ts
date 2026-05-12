@@ -1,7 +1,8 @@
 export const IPC_CHANNELS = {
   GET_ACCOUNTS: 'getAccounts',
   LIST_THREADS: 'listThreads',
-  GET_MESSAGES: 'getMessages'
+  GET_MESSAGES: 'getMessages',
+  SEARCH_THREADS: 'searchThreads'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -59,6 +60,26 @@ export interface Attachment {
   sizeBytes: number
 }
 
+export interface MessageList {
+  messages: Message[]
+  nextPageToken?: string
+  hasMore: boolean
+}
+
+export interface SearchResult {
+  threadId: string
+  subject: string
+  snippet: string
+  sender: { name: string; email: string }
+  date: string
+  unread: boolean
+}
+
+export interface SearchResults {
+  results: SearchResult[]
+  query: string
+}
+
 export interface IpcChannelMap {
   getAccounts: {
     request: void
@@ -69,8 +90,12 @@ export interface IpcChannelMap {
     response: ThreadList
   }
   getMessages: {
-    request: { accountId: string; threadId: string }
-    response: Message[]
+    request: { accountId: string; threadId: string; pageParams?: PageParams }
+    response: MessageList
+  }
+  searchThreads: {
+    request: { accountId: string; query: string }
+    response: SearchResults
   }
 }
 

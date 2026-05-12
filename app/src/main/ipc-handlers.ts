@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { IPC_CHANNELS } from '../ipc/channels'
-import type { Account, ThreadList, Message } from '../ipc/channels'
+import type { Account, ThreadList, MessageList, SearchResults } from '../ipc/channels'
 import { credentialStore } from './credential-store'
 
 const GENMAIL_API_BASE_URL = process.env.GENMAIL_API_BASE_URL ?? 'https://api.genmail.app'
@@ -74,16 +74,51 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     IPC_CHANNELS.GET_MESSAGES,
-    async (_event, payload: { accountId: string; threadId: string }): Promise<Message[]> => {
-      const { accountId, threadId } = payload
+    async (
+      _event,
+      payload: { accountId: string; threadId: string; pageParams?: { pageSize: number; pageToken?: string } }
+    ): Promise<MessageList> => {
+      const { accountId, threadId, pageParams } = payload
       const baseUrl = apiBaseUrl()
-      const url = `${baseUrl}/api/ai-inbox/threads/${encodeURIComponent(threadId)}/messages`
+      const params = new URLSearchParams({
+        pageSize: String(pageParams?.pageSize ?? 20)
+      })
+      if (pageParams?.pageToken) {
+        params.set('pageToken', pageParams.pageToken)
+      }
+      const url = `${baseUrl}/api/ai-inbox/threads/${encodeURIComponent(threadId)}/messages?${params.toString()}`
       const res = await fetch(url, {
         method: 'GET',
         headers: authHeaders(accountId)
       })
       if (!res.ok) {
         throw new Error(`Failed to get messages: ${res.status} ${res.statusText}`)
+      }
+      const data = await res.json()
+      // Support both paginated {messages, nextPageToken, hasMore} and legacy Message[] response
+      if (Array.isArray(data)) {
+        return { messages: data, hasMore: false }
+      }
+      return data as MessageList
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.SEARCH_THREADS,
+    async (
+      _event,
+      payload: { accountId: string; query: string }
+    ): Promise<SearchResults> => {
+      const { accountId, query } = payload
+      const baseUrl = apiBaseUrl()
+      const params = new URLSearchParams({ q: query })
+      const url = `${baseUrl}/api/ai-inbox/search?${params.toString()}`
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: authHeaders(accountId)
+      })
+      if (!res.ok) {
+        throw new Error(`Failed to search: ${res.status} ${res.statusText}`)
       }
       return res.json()
     }
