@@ -1,0 +1,26 @@
+appId: com.genmail.desktop
+productName: Genmail
+directories:
+  buildResources: resources
+  output: release
+files:
+  - dist/**/*
+  - package.json
+win:
+  target:
+    - nsis
+  artifactName: Genmail-${version}-Setup.${ext}
+mac:
+  target:
+    - dmg
+  artifactName: Genmail-${version}.${ext}
+  category: public.app-category.productivity
+linux:
+  target:
+    - AppImage
+    - deb
+  artifactName: Genmail-${version}.${ext}
+  category: Office
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
