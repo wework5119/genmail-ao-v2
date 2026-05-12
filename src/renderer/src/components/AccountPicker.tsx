@@ -24,7 +24,7 @@ export default function AccountPicker() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-500 w-full text-left"
+        className="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-neutral-100 transition-colors duration-[120ms] ease-out focus-visible:outline-2 focus-visible:outline-accent-500 w-full text-left"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
@@ -37,7 +37,7 @@ export default function AccountPicker() {
           <div className="text-sm font-semibold text-text-primary truncate leading-tight">
             {selected?.name ?? 'Select account'}
           </div>
-          <div className="text-2xs text-text-tertiary leading-tight truncate mt-px">
+          <div className="text-2xs text-text-tertiary group-hover:text-text-secondary leading-tight truncate mt-px transition-colors duration-[120ms]">
             {selected?.email ?? ''}
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function AccountPicker() {
                 <div className="text-sm font-medium text-text-primary truncate leading-tight">
                   {account.name}
                 </div>
-                <div className="text-2xs text-text-tertiary truncate leading-tight mt-px">
+                <div className={`text-2xs truncate leading-tight mt-px ${account.id === state.selectedAccountId ? 'text-text-secondary' : 'text-text-tertiary'}`}>
                   {account.email}
                 </div>
               </div>
