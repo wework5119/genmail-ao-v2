@@ -325,6 +325,7 @@ describe('Avatar initials', () => {
   function getInitials(name: string): string {
     return name
       .split(' ')
+      .filter(Boolean)
       .map((n) => n[0])
       .join('')
       .toUpperCase()
@@ -345,6 +346,10 @@ describe('Avatar initials', () => {
 
   it('uppercases the initials', () => {
     expect(getInitials('alice smith')).toBe('AS')
+  })
+
+  it('handles names with extra spaces (filter(Boolean) prevents empty splits)', () => {
+    expect(getInitials('  Alice  Smith  ')).toBe('AS')
   })
 })
 
@@ -414,6 +419,40 @@ describe('Stale async response guard', () => {
     const msgs = [makeMessage({ id: 'msg-1' })]
     const { applied } = applyLoadMessagesSuccess(null, 'thread-1', msgs)
     expect(applied).toBe(false)
+  })
+
+  it('discards load-more result when threadId does not match current thread (stale)', () => {
+    /**
+     * Mirrors the LOAD_MORE_MESSAGES_SUCCESS stale guard added to the reducer.
+     */
+    function applyLoadMoreMessagesSuccess(
+      selectedThreadId: string | null,
+      payloadThreadId: string,
+      existing: Message[],
+      older: Message[]
+    ): { applied: boolean; messages: Message[] } {
+      if (payloadThreadId !== selectedThreadId) {
+        return { applied: false, messages: existing }
+      }
+      const combined = [...older, ...existing].sort(
+        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+      )
+      return { applied: true, messages: combined }
+    }
+
+    const existing = [makeMessage({ id: 'msg-3', sentAt: '2024-03-01T12:00:00Z' })]
+    const older = [makeMessage({ id: 'msg-1', sentAt: '2024-03-01T09:00:00Z' })]
+
+    const stale = applyLoadMoreMessagesSuccess('thread-2', 'thread-1', existing, older)
+    expect(stale.applied).toBe(false)
+    // Existing messages should be untouched
+    expect(stale.messages).toHaveLength(1)
+    expect(stale.messages[0].id).toBe('msg-3')
+
+    const current = applyLoadMoreMessagesSuccess('thread-1', 'thread-1', existing, older)
+    expect(current.applied).toBe(true)
+    expect(current.messages).toHaveLength(2)
+    expect(current.messages[0].id).toBe('msg-1')
   })
 })
 

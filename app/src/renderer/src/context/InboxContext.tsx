@@ -54,7 +54,7 @@ type InboxAction =
   | { type: 'LOAD_MESSAGES_START'; payload: { threadId: string } }
   | { type: 'LOAD_MESSAGES_SUCCESS'; payload: GetMessagesResult & { threadId: string } }
   | { type: 'LOAD_MORE_MESSAGES_START' }
-  | { type: 'LOAD_MORE_MESSAGES_SUCCESS'; payload: GetMessagesResult }
+  | { type: 'LOAD_MORE_MESSAGES_SUCCESS'; payload: GetMessagesResult & { threadId: string } }
   | { type: 'LOAD_MESSAGES_FAILURE'; payload: string }
   | { type: 'CLEAR_MESSAGES' }
 
@@ -139,8 +139,11 @@ function inboxReducer(state: InboxState, action: InboxAction): InboxState {
     case 'LOAD_MESSAGES_SUCCESS': {
       // Guard against stale responses: if the user navigated to a different
       // thread while this fetch was in flight, discard the response.
+      // NOTE: do NOT set messagesLoading: false when discarding — the new
+      // thread's request is still in flight. Loading state is only cleared
+      // by the response that actually matches the current thread.
       if (action.payload.threadId !== state.selectedThreadId) {
-        return { ...state, messagesLoading: false }
+        return state
       }
       const sorted = [...action.payload.messages].sort(
         (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
@@ -156,6 +159,10 @@ function inboxReducer(state: InboxState, action: InboxAction): InboxState {
     case 'LOAD_MORE_MESSAGES_START':
       return { ...state, messagesLoadingMore: true }
     case 'LOAD_MORE_MESSAGES_SUCCESS': {
+      // Guard against stale load-more responses (user navigated away).
+      if (action.payload.threadId !== state.selectedThreadId) {
+        return { ...state, messagesLoadingMore: false }
+      }
       // Older messages are prepended; re-sort to maintain chronological order
       const combined = [...action.payload.messages, ...state.messages].sort(
         (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
@@ -179,6 +186,8 @@ function inboxReducer(state: InboxState, action: InboxAction): InboxState {
       return {
         ...state,
         messages: [],
+        messagesLoading: false,
+        messagesLoadingMore: false,
         messagesNextToken: undefined,
         messagesHasMore: false,
         messagesError: null
@@ -366,17 +375,18 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       state.messagesLoadingMore
     )
       return
+    const threadId = state.selectedThreadId
     dispatch({ type: 'LOAD_MORE_MESSAGES_START' })
     try {
       const result = await getMessages({
         accountId: state.selectedAccountId,
-        threadId: state.selectedThreadId,
+        threadId,
         pageParams: {
           pageSize: 20,
           pageToken: state.messagesNextToken
         }
       })
-      dispatch({ type: 'LOAD_MORE_MESSAGES_SUCCESS', payload: result })
+      dispatch({ type: 'LOAD_MORE_MESSAGES_SUCCESS', payload: { ...result, threadId } })
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to load more messages'
